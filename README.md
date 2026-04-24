@@ -1,5 +1,7 @@
 # mcp-rag
 
+[![License: Polyform Noncommercial 1.0.0](https://img.shields.io/badge/license-Polyform%20NC%201.0-blue)](LICENSE)
+
 Semantic search engine for codebases and documents, exposed via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Connects to any MCP-compatible AI agent (Claude Code, Claude Desktop, Cursor, Gemini, Codex, etc.) and provides contextual code search without blocking the agent's workflow.
 
 ## Features
@@ -722,3 +724,12 @@ Priority order: CUDA → ROCm → CPU. Convenient when deploying across machines
 | `cudnn_conv_algo_search` | `EXHAUSTIVE` | cuDNN algorithm search (slower on first run, faster on subsequent runs) |
 | `do_copy_in_default_stream` | `True` | Synchronous H↔D copy (safer for parallel sessions) |
 
+---
+
+## License
+
+This project is licensed under the **[Polyform Noncommercial License 1.0.0](LICENSE)**.
+
+- ✅ Free for personal use, research, education, and non-commercial projects
+- ✅ Modification and redistribution allowed under the same terms
+- ❌ Commercial use requires a separate agreement with the author
