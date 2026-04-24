@@ -53,7 +53,7 @@ Semantic search engine for codebases and documents, exposed via the [Model Conte
 ### 1. Install
 
 ```bash
-git clone https://github.com/yourname/mcp-rag.git
+git clone https://github.com/denis-kornilov/mcp-rag.git
 cd mcp-rag
 
 # Install all three subsystems (interactive, detects CPU/GPU)
