@@ -72,3 +72,4 @@ mcp_server/.env
 # ── System ─────────────────────────────────────────────────────────────────
 .Trash-*/
 *.sock
+.mcp_rag/db/chroma.sqlite3
