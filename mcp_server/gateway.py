@@ -15,6 +15,10 @@ from urllib.parse import urlparse
 
 from mcp.server.fastmcp import FastMCP
 
+# Capture MCP_TRANSPORT from process env BEFORE loading .env so that
+# auto-detection (stdio vs http) works when the IDE spawns us without setting it.
+_PRE_DOTENV_TRANSPORT = os.environ.get("MCP_TRANSPORT")
+
 # Load mcp_server/.env before rag_server.settings so gateway-specific
 # vars (RAG_BACKEND, RAG_SERVER, MCP_TRANSPORT) override project-wide defaults.
 try:
@@ -1290,9 +1294,9 @@ def main() -> None:
     # Make project key available to all _rag_http calls immediately.
     _set_rag_project_key(project_key)
 
-    _explicit_transport = os.getenv("MCP_TRANSPORT")
-    if _explicit_transport:
-        transport = _explicit_transport
+    # Use value captured before .env was loaded — only "explicit" if set by caller
+    if _PRE_DOTENV_TRANSPORT:
+        transport = _PRE_DOTENV_TRANSPORT
     else:
         # Auto-detect: IDE subprocess (stdin not a TTY) → stdio; standalone shell → http
         transport = "stdio" if not sys.stdin.isatty() else "http"
