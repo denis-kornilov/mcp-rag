@@ -17,5 +17,5 @@ dependencies:
       - pathspec>=0.12.1
       - chromadb==0.5.5
       - watchdog>=6.0.0
-      # Опционально: cross-encoder reranker (тянет torch ~2GB)
+      # Optional: cross-encoder reranker (pulls torch ~2GB)
       # - sentence-transformers>=2.7.0

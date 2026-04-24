@@ -17,7 +17,7 @@ dependencies:
       - transformers>=4.40.0
       - optimum[onnxruntime]>=1.21.0
       - overrides>=7.7.0
-      # onnxruntime variant установит install.sh:
+      # onnxruntime variant will be set by install.sh:
       #   CPU:    onnxruntime
       #   NVIDIA: onnxruntime-gpu
       #   AMD:    onnxruntime-rocm

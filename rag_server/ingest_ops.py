@@ -902,8 +902,8 @@ def sync_project(
         }
         return ingest_report
 
-    # Всегда используем инкрементальное обновление для любых изменений, независимо от их объема.
-    # Автоматический полный реиндекс (threshold) удален для предотвращения блокировок RAG на больших проектах.
+    # Always use incremental updates for any changes, regardless of their volume.
+    # Automatic full reindex (threshold) removed to prevent RAG blocking on large projects.
 
     delete_report = delete_paths(collection, deleted_paths, progress_cb=progress_cb) if deleted_paths else {"deleted_paths": 0}
     ingest_report = ingest_paths(

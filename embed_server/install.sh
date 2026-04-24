@@ -1,11 +1,11 @@
 #!/bin/bash
-# embed_server — интерактивный установщик
+# embed_server — interactive installer
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONDA_DIR="${CONDA_DIR:-$HOME/miniconda3}"
 ENV_NAME="mcp-embed"
 
-# ── цвета ─────────────────────────────────────────────────────────────────────
+# ── colors ────────────────────────────────────────────────────────────────────
 R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'; B='\033[0;34m'; C='\033[0;36m'; W='\033[0m'
 ok()   { echo -e "${G}  ✓ $*${W}"; }
 warn() { echo -e "${Y}  ! $*${W}"; }
@@ -14,21 +14,21 @@ err()  { echo -e "${R}  ✗ $*${W}"; }
 
 echo ""
 echo -e "${B}╔══════════════════════════════════════════╗${W}"
-echo -e "${B}║       embed_server — установщик         ║${W}"
+echo -e "${B}║         embed_server — installer         ║${W}"
 echo -e "${B}╚══════════════════════════════════════════╝${W}"
 echo ""
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. ПРОВЕРКА ТОГО ЧТО УЖЕ УСТАНОВЛЕНО
+# 1. CHECK INSTALLED SOFTWARE
 # ══════════════════════════════════════════════════════════════════════════════
-echo -e "${B}[1/4] Проверяем установленное ПО...${W}"
+echo -e "${B}[1/4] Checking installed software...${W}"
 
 # Conda
 if [ -d "$CONDA_DIR" ]; then
     CONDA_VER="$("$CONDA_DIR/bin/conda" --version 2>/dev/null || echo '?')"
     ok "Conda: $CONDA_VER ($CONDA_DIR)"
 else
-    warn "Conda не найдена — будет установлена"
+    warn "Conda not found — will be installed"
 fi
 
 # Conda env
@@ -38,11 +38,11 @@ if conda env list 2>/dev/null | grep -q "^$ENV_NAME "; then
     ok "Conda env '$ENV_NAME': $PYTHON_VER"
     ENV_EXISTS=true
 else
-    warn "Conda env '$ENV_NAME' не найдена"
+    warn "Conda env '$ENV_NAME' not found"
     ENV_EXISTS=false
 fi
 
-# Установленные пакеты (если env есть)
+# Installed packages (if env exists)
 if [ "$ENV_EXISTS" = true ]; then
     PY="$CONDA_DIR/envs/$ENV_NAME/bin/python"
     for pkg in onnxruntime onnxruntime-gpu onnxruntime-rocm optimum transformers fastapi uvicorn; do
@@ -50,24 +50,24 @@ if [ "$ENV_EXISTS" = true ]; then
             PKG_VER="$("$PY" -c "import importlib.metadata; print(importlib.metadata.version('$pkg'))" 2>/dev/null || echo '?')"
             ok "$pkg: $PKG_VER"
         else
-            warn "$pkg: не установлен"
+            warn "$pkg: not installed"
         fi
     done
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. ОПРЕДЕЛЕНИЕ ЖЕЛЕЗА И ДРАЙВЕРОВ
+# 2. DETECT HARDWARE AND DRIVERS
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${B}[2/4] Определяем железо...${W}"
+echo -e "${B}[2/4] Detecting hardware...${W}"
 
 # CPU
 CPU_MODEL="$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo 'unknown')"
 CPU_CORES="$(nproc 2>/dev/null || echo '?')"
 RAM_GB="$(awk '/MemTotal/ {printf "%.0f", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo '?')"
-ok "CPU: $CPU_MODEL ($CPU_CORES ядер, RAM: ${RAM_GB}GB)"
+ok "CPU: $CPU_MODEL ($CPU_CORES cores, RAM: ${RAM_GB}GB)"
 
-# NVIDIA — проверяем lspci (bare metal) и nvidia-smi (WSL2/VM/container)
+# NVIDIA — check lspci (bare metal) and nvidia-smi (WSL2/VM/container)
 NVIDIA_HW=false
 NVIDIA_DRIVER=false
 if lspci 2>/dev/null | grep -qi nvidia; then
@@ -75,7 +75,7 @@ if lspci 2>/dev/null | grep -qi nvidia; then
     NVIDIA_HW=true
     info "NVIDIA GPU (lspci): $NVIDIA_GPU"
 fi
-# WSL2 / контейнеры — lspci не видит GPU, но nvidia-smi работает
+# WSL2 / containers — lspci doesn't see GPU, but nvidia-smi works
 if [ "$NVIDIA_HW" = false ] && command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null 2>&1; then
     NVIDIA_GPU="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo 'NVIDIA GPU')"
     NVIDIA_HW=true
@@ -87,9 +87,9 @@ if [ "$NVIDIA_HW" = true ]; then
         CUDA_VER="$(nvidia-smi | grep -oP 'CUDA Version: \K[0-9.]+' || echo '?')"
         NVDR_VER="$(nvidia-smi | grep -oP 'Driver Version: \K[0-9.]+' || echo '?')"
         VRAM="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1 || echo '?')"
-        ok "  Драйвер: $NVDR_VER | CUDA: $CUDA_VER | VRAM: ${VRAM}MB"
+        ok "  Driver: $NVDR_VER | CUDA: $CUDA_VER | VRAM: ${VRAM}MB"
     else
-        warn "  Драйвер NVIDIA не установлен или не работает"
+        warn "  NVIDIA Driver is not installed or not working"
     fi
 fi
 
@@ -106,31 +106,31 @@ if lspci 2>/dev/null | grep -qi 'amd\|radeon'; then
             ROCM_VER="$(cat /opt/rocm/.info/version 2>/dev/null || rocm-smi --version 2>/dev/null | head -1 || echo '?')"
             ok "  ROCm: $ROCM_VER"
         else
-            warn "  ROCm не установлен"
+            warn "  ROCm is not installed"
         fi
     fi
 fi
 
 if [ "$NVIDIA_HW" = false ] && [ "$AMD_HW" = false ]; then
-    info "GPU не обнаружен — доступен только CPU режим"
+    info "GPU not detected — only CPU mode is available"
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. ВЫБОР РЕЖИМА ВЫЧИСЛЕНИЙ
+# 3. SELECT COMPUTE BACKEND
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${B}[3/4] Выберите режим вычислений:${W}"
+echo -e "${B}[3/4] Select compute backend:${W}"
 echo ""
 
-# Собираем доступные варианты
+# Build available options
 OPTIONS=()
 LABELS=()
 BACKENDS=()
 ONNX_PKGS=()
 
-# CPU всегда доступен
+# CPU is always available
 OPTIONS+=("1")
-LABELS+=("CPU — ONNX Runtime INT8  (всегда работает, не требует GPU)")
+LABELS+=("CPU — ONNX Runtime INT8  (always works, no GPU required)")
 BACKENDS+=("onnx-cpu")
 ONNX_PKGS+=("onnxruntime")
 
@@ -139,12 +139,12 @@ IDX=2
 if [ "$NVIDIA_HW" = true ]; then
     if [ "$NVIDIA_DRIVER" = true ]; then
         OPTIONS+=("$IDX")
-        LABELS+=("NVIDIA GPU — ONNX CUDA  (драйвер установлен, CUDA $CUDA_VER)")
+        LABELS+=("NVIDIA GPU — ONNX CUDA  (driver installed, CUDA $CUDA_VER)")
         BACKENDS+=("onnx-cuda")
         ONNX_PKGS+=("onnxruntime-gpu")
     else
         OPTIONS+=("$IDX")
-        LABELS+=("NVIDIA GPU — ONNX CUDA  ${Y}[ДРАЙВЕР НЕ УСТАНОВЛЕН — будет предложена установка]${W}")
+        LABELS+=("NVIDIA GPU — ONNX CUDA  ${Y}[DRIVER NOT INSTALLED — installation will be offered]${W}")
         BACKENDS+=("onnx-cuda")
         ONNX_PKGS+=("onnxruntime-gpu")
     fi
@@ -154,26 +154,26 @@ fi
 if [ "$AMD_HW" = true ]; then
     if [ "$AMD_DRIVER" = true ]; then
         OPTIONS+=("$IDX")
-        LABELS+=("AMD GPU — ONNX ROCm  (ROCm $ROCM_VER установлен)")
+        LABELS+=("AMD GPU — ONNX ROCm  (ROCm $ROCM_VER installed)")
         BACKENDS+=("onnx-rocm")
         ONNX_PKGS+=("onnxruntime-rocm")
     else
         OPTIONS+=("$IDX")
-        LABELS+=("AMD GPU — ONNX ROCm  ${Y}[ROCm НЕ УСТАНОВЛЕН — будет предложена установка]${W}")
+        LABELS+=("AMD GPU — ONNX ROCm  ${Y}[ROCm NOT INSTALLED — installation will be offered]${W}")
         BACKENDS+=("onnx-rocm")
         ONNX_PKGS+=("onnxruntime-rocm")
     fi
     IDX=$((IDX+1))
 fi
 
-# Показываем меню
+# Show menu
 for i in "${!OPTIONS[@]}"; do
     echo -e "  ${G}${OPTIONS[$i]}${W}) ${LABELS[$i]}"
 done
 echo ""
 
 while true; do
-    read -rp "  Ваш выбор [${OPTIONS[0]}]: " CHOICE
+    read -rp "  Your choice [${OPTIONS[0]}]: " CHOICE
     CHOICE="${CHOICE:-${OPTIONS[0]}}"
     for i in "${!OPTIONS[@]}"; do
         if [ "$CHOICE" = "${OPTIONS[$i]}" ]; then
@@ -181,54 +181,54 @@ while true; do
             break 2
         fi
     done
-    err "Неверный выбор. Введите одно из: ${OPTIONS[*]}"
+    err "Invalid choice. Enter one of: ${OPTIONS[*]}"
 done
 
 EMBED_BACKEND="${BACKENDS[$SELECTED_IDX]}"
 ONNXRUNTIME_PKG="${ONNX_PKGS[$SELECTED_IDX]}"
 echo ""
-ok "Выбрано: $EMBED_BACKEND ($ONNXRUNTIME_PKG)"
+ok "Selected: $EMBED_BACKEND ($ONNXRUNTIME_PKG)"
 
-# Предложить установку драйвера если нужно
+# Offer driver installation if needed
 if [ "$EMBED_BACKEND" = "onnx-cuda" ] && [ "$NVIDIA_DRIVER" = false ]; then
     echo ""
-    warn "Драйвер NVIDIA не установлен."
-    read -rp "  Установить через ubuntu-drivers? [y/N]: " INST_DRV
+    warn "NVIDIA Driver is not installed."
+    read -rp "  Install via ubuntu-drivers? [y/N]: " INST_DRV
     if [[ "$INST_DRV" =~ ^[Yy]$ ]]; then
         sudo apt-get install -y -q ubuntu-drivers-common && sudo ubuntu-drivers autoinstall \
-            && ok "Драйвер установлен. Потребуется перезагрузка." \
-            || warn "Не удалось установить драйвер — продолжаем с CPU"
+            && ok "Driver installed. Reboot is required." \
+            || warn "Failed to install driver — continuing with CPU"
     else
-        warn "Пропускаем. onnxruntime-gpu может не работать без драйвера."
+        warn "Skipping. onnxruntime-gpu might not work without driver."
     fi
 fi
 
 if [ "$EMBED_BACKEND" = "onnx-rocm" ] && [ "$AMD_DRIVER" = false ]; then
     echo ""
-    warn "ROCm не установлен."
-    read -rp "  Установить ROCm? [y/N]: " INST_ROCM
+    warn "ROCm is not installed."
+    read -rp "  Install ROCm? [y/N]: " INST_ROCM
     if [[ "$INST_ROCM" =~ ^[Yy]$ ]]; then
         bash "$(dirname "$SCRIPT_DIR")/install_adds.sh" \
-            && ok "ROCm установлен. Потребуется перезагрузка." \
-            || warn "Не удалось установить ROCm — продолжаем с CPU"
+            && ok "ROCm installed. Reboot is required." \
+            || warn "Failed to install ROCm — continuing with CPU"
     else
-        warn "Пропускаем. onnxruntime-rocm может не работать без ROCm."
+        warn "Skipping. onnxruntime-rocm might not work without ROCm."
     fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4. УСТАНОВКА
+# 4. INSTALLATION
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${B}[4/4] Устанавливаем...${W}"
+echo -e "${B}[4/4] Installing...${W}"
 
 # Miniconda
 if [ ! -d "$CONDA_DIR" ]; then
-    info "Устанавливаем Miniconda..."
+    info "Installing Miniconda..."
     INST="/tmp/miniconda.sh"
     wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O "$INST"
     bash "$INST" -b -p "$CONDA_DIR" && rm "$INST"
-    ok "Miniconda установлена"
+    ok "Miniconda installed"
 fi
 eval "$("$CONDA_DIR/bin/conda" shell.bash hook)"
 grep -q "miniconda3/bin/conda" ~/.bashrc 2>/dev/null \
@@ -236,66 +236,66 @@ grep -q "miniconda3/bin/conda" ~/.bashrc 2>/dev/null \
 
 # Conda env
 if [ "$ENV_EXISTS" = false ]; then
-    info "Создаём conda env '$ENV_NAME'..."
+    info "Creating conda env '$ENV_NAME'..."
     conda env create -f "$SCRIPT_DIR/environment.yml"
-    ok "Env создан"
+    ok "Env created"
 fi
 conda activate "$ENV_NAME"
 pip install -q --upgrade pip
 
 # Base deps
-info "Устанавливаем базовые пакеты..."
+info "Installing base packages..."
 pip install -q -r "$SCRIPT_DIR/requirements.txt"
-ok "Базовые пакеты установлены"
+ok "Base packages installed"
 
-# onnxruntime (конфликтуют — сначала удаляем все варианты)
-info "Устанавливаем $ONNXRUNTIME_PKG..."
+# onnxruntime (conflict with each other — uninstall all variants first)
+info "Installing $ONNXRUNTIME_PKG..."
 pip uninstall -q -y onnxruntime onnxruntime-gpu onnxruntime-rocm 2>/dev/null || true
 
 INSTALL_OK=false
 
 if [ "$EMBED_BACKEND" = "onnx-cuda" ]; then
-    # Определяем версию CUDA для правильного пакета
+    # Determine CUDA version for correct package
     CUDA_MAJOR="$(nvidia-smi 2>/dev/null | grep -oP 'CUDA Version: \K[0-9]+' | head -1 || echo '')"
-    info "CUDA major version: ${CUDA_MAJOR:-неизвестно}"
+    info "CUDA major version: ${CUDA_MAJOR:-unknown}"
 
-    # Пробуем conda-forge (тянет cudatoolkit сам — самый надёжный способ)
-    info "Пробуем conda install onnxruntime-gpu (рекомендуется — тянет CUDA сам)..."
+    # Try conda-forge (pulls cudatoolkit automatically — most reliable way)
+    info "Trying conda install onnxruntime-gpu (recommended — pulls CUDA automatically)..."
     if conda install -y -q -c conda-forge onnxruntime-gpu 2>/dev/null; then
         INSTALL_OK=true
-        ok "onnxruntime-gpu установлен через conda (CUDA bundled)"
+        ok "onnxruntime-gpu installed via conda (CUDA bundled)"
     else
-        # Fallback: pip с нужным индексом под версию CUDA
+        # Fallback: pip with correct index for CUDA version
         if [ "$CUDA_MAJOR" = "12" ]; then
             PIP_INDEX="https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
-            info "Пробуем pip install onnxruntime-gpu (CUDA 12)..."
+            info "Trying pip install onnxruntime-gpu (CUDA 12)..."
             if pip install -q onnxruntime-gpu --extra-index-url "$PIP_INDEX"; then
                 INSTALL_OK=true
-                ok "onnxruntime-gpu (CUDA 12) установлен через pip"
+                ok "onnxruntime-gpu (CUDA 12) installed via pip"
             fi
         fi
         if [ "$INSTALL_OK" = false ]; then
-            info "Пробуем pip install onnxruntime-gpu (стандартный, CUDA 11/12)..."
+            info "Trying pip install onnxruntime-gpu (standard, CUDA 11/12)..."
             if pip install -q onnxruntime-gpu; then
                 INSTALL_OK=true
-                ok "onnxruntime-gpu установлен через pip"
+                ok "onnxruntime-gpu installed via pip"
             fi
         fi
     fi
 
-    # Проверяем что CUDAExecutionProvider реально доступен
+    # Verify CUDAExecutionProvider is actually available
     if [ "$INSTALL_OK" = true ]; then
         ORT_PROVIDERS="$(python -c "import onnxruntime as ort; print(ort.get_available_providers())" 2>/dev/null || echo '')"
         info "ORT providers: $ORT_PROVIDERS"
         if echo "$ORT_PROVIDERS" | grep -q "CUDAExecutionProvider"; then
-            ok "CUDAExecutionProvider доступен — GPU будет использоваться"
+            ok "CUDAExecutionProvider is available — GPU will be used"
         else
-            warn "CUDAExecutionProvider НЕ найден несмотря на установку onnxruntime-gpu."
-            warn "Вероятные причины:"
-            warn "  1. CUDA Toolkit не установлен системно (apt install cuda-toolkit-12-x)"
-            warn "  2. Версия CUDA в системе не совпадает с onnxruntime-gpu"
-            warn "  3. WSL2 — нужен WSL2 CUDA driver (не обычный linux driver)"
-            warn "Откатываемся на CPU. После установки CUDA запусти install.sh повторно."
+            warn "CUDAExecutionProvider NOT found despite installing onnxruntime-gpu."
+            warn "Possible reasons:"
+            warn "  1. System-wide CUDA Toolkit is not installed (apt install cuda-toolkit-12-x)"
+            warn "  2. System CUDA version does not match onnxruntime-gpu"
+            warn "  3. WSL2 — WSL2 CUDA driver is required (not standard linux driver)"
+            warn "Falling back to CPU. After installing CUDA, run install.sh again."
             pip uninstall -q -y onnxruntime-gpu 2>/dev/null || true
             pip install -q onnxruntime
             EMBED_BACKEND="onnx-cpu"
@@ -305,13 +305,13 @@ if [ "$EMBED_BACKEND" = "onnx-cuda" ]; then
 elif [ "$EMBED_BACKEND" = "onnx-rocm" ]; then
     if pip install -q "$ONNXRUNTIME_PKG"; then
         INSTALL_OK=true
-        ok "$ONNXRUNTIME_PKG установлен"
+        ok "$ONNXRUNTIME_PKG installed"
         ORT_PROVIDERS="$(python -c "import onnxruntime as ort; print(ort.get_available_providers())" 2>/dev/null || echo '')"
         info "ORT providers: $ORT_PROVIDERS"
         if echo "$ORT_PROVIDERS" | grep -q "ROCMExecutionProvider"; then
-            ok "ROCMExecutionProvider доступен — GPU будет использоваться"
+            ok "ROCMExecutionProvider is available — GPU will be used"
         else
-            warn "ROCMExecutionProvider НЕ найден. Проверьте установку ROCm."
+            warn "ROCMExecutionProvider NOT found. Check ROCm installation."
             pip uninstall -q -y onnxruntime-rocm 2>/dev/null || true
             pip install -q onnxruntime
             EMBED_BACKEND="onnx-cpu"
@@ -320,25 +320,25 @@ elif [ "$EMBED_BACKEND" = "onnx-rocm" ]; then
 
 else
     # CPU
-    pip install -q onnxruntime && ok "onnxruntime (CPU) установлен"
+    pip install -q onnxruntime && ok "onnxruntime (CPU) installed"
 fi
 
 if [ "$INSTALL_OK" = false ] && [ "$EMBED_BACKEND" != "onnx-cpu" ]; then
-    warn "Установка GPU пакета не удалась, откат на CPU"
+    warn "GPU package installation failed, falling back to CPU"
     pip install -q onnxruntime
     EMBED_BACKEND="onnx-cpu"
 fi
 
-# Обновить .env
+# Update .env
 sed -i "s|^EMBED_BACKEND=.*|EMBED_BACKEND=$EMBED_BACKEND|" "$SCRIPT_DIR/.env"
-ok "EMBED_BACKEND=$EMBED_BACKEND записан в .env"
+ok "EMBED_BACKEND=$EMBED_BACKEND written to .env"
 
 echo ""
 echo -e "${G}╔══════════════════════════════════════════╗${W}"
-echo -e "${G}║           Установка завершена            ║${W}"
+echo -e "${G}║         Installation completed           ║${W}"
 echo -e "${G}╚══════════════════════════════════════════╝${W}"
 echo ""
-echo "  Режим   : $EMBED_BACKEND"
+echo "  Mode    : $EMBED_BACKEND"
 echo "  Env     : $CONDA_DIR/envs/$ENV_NAME"
-echo "  Запуск  : bash $SCRIPT_DIR/start_embed.sh"
+echo "  Run     : bash $SCRIPT_DIR/start_embed.sh"
 echo ""

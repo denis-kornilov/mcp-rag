@@ -1,9 +1,9 @@
-# mcp_server (gateway) — зависимости
-# В local-режиме gateway импортирует rag_server напрямую (in-process),
-# поэтому нужны все зависимости rag_server.
-# embed_server работает отдельным процессом — его пакеты (onnxruntime, transformers,
-# optimum) здесь НЕ нужны.
-# PYTHONPATH должен включать mcp-rag/ (корень проекта).
+# mcp_server (gateway) — dependencies
+# In local-mode, gateway imports rag_server directly (in-process),
+# therefore all rag_server dependencies are needed.
+# embed_server runs as a separate process — its packages (onnxruntime, transformers,
+# optimum) are NOT needed here.
+# PYTHONPATH must include mcp-rag/ (project root).
 
 mcp>=1.12.4
 fastapi[standard]>=0.115.0

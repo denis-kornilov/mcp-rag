@@ -12,7 +12,7 @@ def register_project(body: Dict[str, Any] = Body(default={})) -> Dict[str, Any]:
     
     manager = get_manager()
     
-    # Если ключ передан, проверяем существующий или создаем с этим ключом
+    # If key is provided, check existing or create with this key
     if key:
         existing = manager.get(key)
         if existing:

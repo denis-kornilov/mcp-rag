@@ -131,7 +131,7 @@ def sync(body: Dict[str, Any] = Body(default={})) -> Dict[str, Any]:
                     total = payload.get("total", 0)
                     if total:
                         extra["percent"] = round(idx / total * 100, 1)
-                    extra["summary"] = f"подготовка {idx}/{total} файлов"
+                    extra["summary"] = f"preparing {idx}/{total} files"
 
                 elif stage == "scan_complete":
                     new_c = payload.get("new_paths", 0)

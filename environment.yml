@@ -1,14 +1,14 @@
 name: mcp-rag-all
-# Единое conda-окружение для всего стека (embed + rag + mcp gateway).
-# Используется для разработки или однопроцессорных машин.
+# Unified conda environment for the entire stack (embed + rag + mcp gateway).
+# For development or single-machine deployments.
 #
-# Для продакшн предпочтительны отдельные env:
+# For production, separate envs are preferred:
 #   embed_server: environment.yml → mcp-embed
 #   rag_server:   environment.yml → mcp-rag
 #   mcp_server:   environment.yml → mcp-gateway
 #
-# Создать: conda env create -f environment.yml
-# GPU (onnxruntime): см. embed_server/install.sh
+# Create: conda env create -f environment.yml
+# GPU (onnxruntime): see embed_server/install.sh
 
 channels:
   - conda-forge
@@ -37,13 +37,13 @@ dependencies:
       - transformers>=4.40.0
       - optimum[onnxruntime]>=1.21.0
       - overrides>=7.7.0
-      # onnxruntime вариант (конфликтуют — выбрать один):
-      - onnxruntime>=1.19.0          # CPU (по умолчанию)
+      # onnxruntime variant (mutually exclusive — select one):
+      - onnxruntime>=1.19.0          # CPU (default)
       # - onnxruntime-gpu            # NVIDIA CUDA
       # - onnxruntime-rocm           # AMD ROCm
 
       # ── mcp_server ───────────────────────────────────────────────────────────
       - mcp>=1.12.4
 
-      # ── опционально: reranker ────────────────────────────────────────────────
+      # ── optional: reranker ────────────────────────────────────────────────
       # - sentence-transformers>=2.7.0

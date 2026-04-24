@@ -1,7 +1,7 @@
 #!/bin/bash
-# MCP сервер — запускается независимо.
-# IDE подключается к нему по HTTP.
-# Сам является RAG клиентом (подключается к rag_server).
+# MCP server — runs independently.
+# IDE connects to it via HTTP.
+# Acts as a RAG client itself (connects to rag_server).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 

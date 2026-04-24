@@ -1,6 +1,6 @@
 #!/bin/bash
-# rag_server — запуск (remote HTTP mode)
-# Перед стартом проверяет и при необходимости корректирует .env.
+# rag_server — start (remote HTTP mode)
+# Checks and corrects .env before starting if necessary.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,13 +15,13 @@ err()  { echo -e "${R}  ✗ $*${W}"; exit 1; }
 
 echo ""
 echo -e "${B}╔══════════════════════════════════════════╗${W}"
-echo -e "${B}║          rag_server — запуск            ║${W}"
+echo -e "${B}║          rag_server — start             ║${W}"
 echo -e "${B}╚══════════════════════════════════════════╝${W}"
 echo ""
 
-# ── 1. Проверка .env ──────────────────────────────────────────────────────────
+# ── 1. Check .env ──────────────────────────────────────────────────────────
 if [ ! -f "$ENV_FILE" ]; then
-    err ".env не найден: $ENV_FILE — скопируйте из .env.example или запустите install.sh"
+    err ".env not found: $ENV_FILE — copy from .env.example or run install.sh"
 fi
 
 _env() { grep "^$1=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | xargs; }
@@ -33,12 +33,12 @@ EMBED_URL="$(_env EMBED_SERVER_URL)"
 DATA_ROOT="$(_env SERVER_DATA_ROOT)"
 FS_WATCHER="$(_env FS_WATCHER_ENABLED)"
 
-echo -e "${B}[1/3] Проверка конфигурации .env...${W}"
+echo -e "${B}[1/3] Checking .env configuration...${W}"
 
 # RAG_HOST
 RAG_HOST="${RAG_HOST:-0.0.0.0}"
 if [ -z "$(_env RAG_HOST)" ]; then
-    warn "RAG_HOST не задан — используется 0.0.0.0"
+    warn "RAG_HOST not set — using 0.0.0.0"
     echo "RAG_HOST=0.0.0.0" >> "$ENV_FILE"
 fi
 ok "RAG_HOST=$RAG_HOST"
@@ -46,12 +46,12 @@ ok "RAG_HOST=$RAG_HOST"
 # RAG_PORT
 RAG_PORT="${RAG_PORT:-8000}"
 if [ -z "$(_env RAG_PORT)" ]; then
-    warn "RAG_PORT не задан — используется 8000"
+    warn "RAG_PORT not set — using 8000"
     echo "RAG_PORT=8000" >> "$ENV_FILE"
 fi
-# Проверка конфликта с embed_server
+# Check conflict with embed_server
 if [ "$RAG_PORT" = "8001" ]; then
-    err "RAG_PORT=8001 конфликтует с embed_server (порт 8001). Установите RAG_PORT=8000 в $ENV_FILE"
+    err "RAG_PORT=8001 conflicts with embed_server (port 8001). Set RAG_PORT=8000 in $ENV_FILE"
 fi
 ok "RAG_PORT=$RAG_PORT"
 
@@ -61,53 +61,53 @@ ok "ENV_NAME=$ENV_NAME"
 
 # EMBED_SERVER_URL
 if [ -z "$EMBED_URL" ]; then
-    warn "EMBED_SERVER_URL не задан в $ENV_FILE"
-    warn "По умолчанию: http://127.0.0.1:8001"
+    warn "EMBED_SERVER_URL not set in $ENV_FILE"
+    warn "Default: http://127.0.0.1:8001"
     echo "EMBED_SERVER_URL=http://127.0.0.1:8001" >> "$ENV_FILE"
     EMBED_URL="http://127.0.0.1:8001"
 fi
 ok "EMBED_SERVER_URL=$EMBED_URL"
 
-# FS_WATCHER — предупреждение если включён
+# FS_WATCHER — warning if enabled
 if [ "$FS_WATCHER" = "true" ]; then
-    warn "FS_WATCHER_ENABLED=true — watchdog активен."
-    warn "На больших проектах расходует inotify watches. Рекомендуется: FS_WATCHER_ENABLED=false"
+    warn "FS_WATCHER_ENABLED=true — watchdog is active."
+    warn "Consumes inotify watches on large projects. Recommended: FS_WATCHER_ENABLED=false"
 fi
 
-# SERVER_DATA_ROOT — создать если нет
+# SERVER_DATA_ROOT — create if missing
 DATA_ROOT="${DATA_ROOT:-./mcp_rag_projects}"
 if [[ "$DATA_ROOT" != /* ]]; then
     DATA_ROOT="$ROOT_DIR/${DATA_ROOT#./}"
 fi
 if [ ! -d "$DATA_ROOT" ]; then
     mkdir -p "$DATA_ROOT"
-    ok "Создан SERVER_DATA_ROOT: $DATA_ROOT"
+    ok "Created SERVER_DATA_ROOT: $DATA_ROOT"
 else
     ok "SERVER_DATA_ROOT: $DATA_ROOT"
 fi
 
-# ── 2. Проверка доступности embed_server ─────────────────────────────────────
+# ── 2. Check embed_server availability ─────────────────────────────────────
 echo ""
-echo -e "${B}[2/3] Проверка embed_server...${W}"
+echo -e "${B}[2/3] Checking embed_server availability...${W}"
 EMBED_HEALTH="${EMBED_URL%/}/healthz"
 if curl -sf --max-time 3 "$EMBED_HEALTH" > /dev/null 2>&1; then
     EMBED_INFO="$(curl -sf --max-time 3 "$EMBED_HEALTH" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('type','?'), 'threads_ingest='+str(d.get('ingest_threads','?')), 'threads_search='+str(d.get('search_threads','?')))" 2>/dev/null || echo "ok")"
-    ok "embed_server доступен: $EMBED_INFO"
+    ok "embed_server available: $EMBED_INFO"
 else
-    warn "embed_server недоступен по $EMBED_URL"
-    warn "Убедитесь что embed_server запущен: bash embed_server/start_embed.sh"
-    warn "rag_server стартует, но запросы эмбеддинга будут завершаться с ошибкой."
+    warn "embed_server unavailable at $EMBED_URL"
+    warn "Make sure embed_server is running: bash embed_server/start_embed.sh"
+    warn "rag_server starting, but embedding requests will fail."
 fi
 
-# ── 3. Запуск ─────────────────────────────────────────────────────────────────
+# ── 3. Start ─────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${B}[3/3] Запуск rag_server...${W}"
+echo -e "${B}[3/3] Starting rag_server...${W}"
 
 CONDA_DIR="${CONDA_DIR:-$HOME/miniconda3}"
 PYTHON="${PYTHON:-$("$CONDA_DIR/bin/conda" run -n "$ENV_NAME" which python 2>/dev/null || which python3)}"
 
 if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then
-    err "Python не найден в env '$ENV_NAME'. Запустите: bash $SCRIPT_DIR/install.sh"
+    err "Python not found in env '$ENV_NAME'. Run: bash $SCRIPT_DIR/install.sh"
 fi
 
 export PYTHONPATH="$ROOT_DIR"

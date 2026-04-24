@@ -1,5 +1,5 @@
 #!/bin/bash
-# rag_server — интерактивный установщик
+# rag_server — interactive installer
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONDA_DIR="${CONDA_DIR:-$HOME/miniconda3}"
@@ -13,19 +13,19 @@ err()  { echo -e "${R}  ✗ $*${W}"; }
 
 echo ""
 echo -e "${B}╔══════════════════════════════════════════╗${W}"
-echo -e "${B}║        rag_server — установщик          ║${W}"
+echo -e "${B}║        rag_server — installer           ║${W}"
 echo -e "${B}╚══════════════════════════════════════════╝${W}"
 echo ""
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. ПРОВЕРКА ТОГО ЧТО УЖЕ УСТАНОВЛЕНО
+# 1. CHECK INSTALLED SOFTWARE
 # ══════════════════════════════════════════════════════════════════════════════
-echo -e "${B}[1/3] Проверяем установленное ПО...${W}"
+echo -e "${B}[1/3] Checking installed software...${W}"
 
 if [ -d "$CONDA_DIR" ]; then
     ok "Conda: $("$CONDA_DIR/bin/conda" --version 2>/dev/null || echo '?')"
 else
-    warn "Conda не найдена — будет установлена"
+    warn "Conda not found — will be installed"
 fi
 
 eval "$("$CONDA_DIR/bin/conda" shell.bash hook 2>/dev/null)" || true
@@ -38,64 +38,64 @@ if conda env list 2>/dev/null | grep -q "^$ENV_NAME "; then
             PKG_VER="$("$PY" -c "import importlib.metadata; print(importlib.metadata.version('$pkg'))" 2>/dev/null || echo '?')"
             ok "$pkg: $PKG_VER"
         else
-            warn "$pkg: не установлен"
+            warn "$pkg: not installed"
         fi
     done
 else
-    warn "Conda env '$ENV_NAME' не найдена"
+    warn "Conda env '$ENV_NAME' not found"
     ENV_EXISTS=false
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. СИСТЕМНЫЕ РЕСУРСЫ
+# 2. SYSTEM RESOURCES
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${B}[2/3] Системные ресурсы...${W}"
+echo -e "${B}[2/3] System resources...${W}"
 
 CPU_MODEL="$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo 'unknown')"
 CPU_CORES="$(nproc 2>/dev/null || echo '?')"
 RAM_GB="$(awk '/MemTotal/ {printf "%.0f", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo '?')"
-ok "CPU: $CPU_MODEL ($CPU_CORES ядер)"
+ok "CPU: $CPU_MODEL ($CPU_CORES cores)"
 ok "RAM: ${RAM_GB} GB"
 
-# Диск для ChromaDB
+# Disk for ChromaDB
 DATA_DIR="$(dirname "$SCRIPT_DIR")/data"
 if [ -d "$DATA_DIR" ]; then
     DISK_FREE="$(df -h "$DATA_DIR" 2>/dev/null | tail -1 | awk '{print $4}' || echo '?')"
-    ok "Диск (data/): $DISK_FREE свободно"
+    ok "Disk (data/): $DISK_FREE free"
 else
-    info "Папка data/ будет создана при первом запуске"
+    info "Folder data/ will be created on first start"
 fi
 
 echo ""
-info "rag_server не использует GPU напрямую."
-info "Для reranker используется ONNX Runtime CPU."
-info "Вычисления embeddings — на отдельных embed_server воркерах."
+info "rag_server does not use GPU directly."
+info "ONNX Runtime CPU is used for reranker."
+info "Embeddings computation — on separate embed_server workers."
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. УСТАНОВКА
+# 3. INSTALLATION
 # ══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo -e "${B}[3/3] Подтвердите установку:${W}"
+echo -e "${B}[3/3] Confirm installation:${W}"
 echo ""
-echo "  Будет установлено в env '$ENV_NAME':"
+echo "  Will be installed in env '$ENV_NAME':"
 echo "    fastapi, uvicorn, pydantic, pydantic-settings, chromadb,"
-echo "    watchdog, pathspec и зависимости"
+echo "    watchdog, pathspec and dependencies"
 echo ""
-read -rp "  Продолжить? [Y/n]: " CONFIRM
+read -rp "  Continue? [Y/n]: " CONFIRM
 CONFIRM="${CONFIRM:-Y}"
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-    echo "Отменено."
+    echo "Cancelled."
     exit 0
 fi
 
 # Miniconda
 if [ ! -d "$CONDA_DIR" ]; then
-    info "Устанавливаем Miniconda..."
+    info "Installing Miniconda..."
     INST="/tmp/miniconda.sh"
     wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O "$INST"
     bash "$INST" -b -p "$CONDA_DIR" && rm "$INST"
-    ok "Miniconda установлена"
+    ok "Miniconda installed"
 fi
 eval "$("$CONDA_DIR/bin/conda" shell.bash hook)"
 grep -q "miniconda3/bin/conda" ~/.bashrc 2>/dev/null \
@@ -103,33 +103,33 @@ grep -q "miniconda3/bin/conda" ~/.bashrc 2>/dev/null \
 
 # System deps
 if command -v apt-get &>/dev/null; then
-    info "Системные пакеты..."
+    info "System packages..."
     sudo apt-get update -q
     sudo apt-get install -y -q build-essential libgomp1 curl wget
 fi
 
 # Conda env
 if [ "$ENV_EXISTS" = false ]; then
-    info "Создаём conda env '$ENV_NAME'..."
+    info "Creating conda env '$ENV_NAME'..."
     conda env create -f "$SCRIPT_DIR/environment.yml"
-    ok "Env создан"
+    ok "Env created"
 fi
 conda activate "$ENV_NAME"
 pip install -q --upgrade pip
 
-info "Устанавливаем пакеты..."
+info "Installing packages..."
 pip install -q -r "$SCRIPT_DIR/requirements.txt"
-ok "Все пакеты установлены"
+ok "All packages installed"
 
 echo ""
 echo -e "${G}╔══════════════════════════════════════════╗${W}"
-echo -e "${G}║           Установка завершена            ║${W}"
+echo -e "${G}║         Installation complete            ║${W}"
 echo -e "${G}╚══════════════════════════════════════════╝${W}"
 echo ""
 echo "  Env    : $CONDA_DIR/envs/$ENV_NAME"
-echo "  Запуск : bash $SCRIPT_DIR/start_rag.sh"
+echo "  Start  : bash $SCRIPT_DIR/start_rag.sh"
 echo ""
-echo "  Не забудьте указать в $SCRIPT_DIR/.env:"
+echo "  Don't forget to configure in $SCRIPT_DIR/.env:"
 echo "    EMBED_SERVER_URL=http://<embed_host>:8001"
-echo "    PROJECT_ROOT=<путь к проекту>"
+echo "    PROJECT_ROOT=<path to project>"
 echo ""

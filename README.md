@@ -309,28 +309,28 @@ MIT
 
 ---
 
-## Подключение к AI-агентам
+## Connecting to AI Agents
 
 ### Claude Code
 
-Официальная CLI: https://docs.anthropic.com/en/docs/claude-code/getting-started
+Official CLI: https://docs.anthropic.com/en/docs/claude-code/getting-started
 
 ```bash
-# Установка
+# Installation
 npm install -g @anthropic-ai/claude-code
 
-# Добавить MCP-сервер (HTTP режим — gateway запущен отдельно)
+# Add MCP server (HTTP mode — gateway runs separately)
 claude mcp add mcp-rag --transport http http://127.0.0.1:8002/mcp
 
-# Или stdio режим (gateway запускается автоматически из папки проекта)
+# Or stdio mode (gateway runs automatically from project folder)
 claude mcp add mcp-rag python /path/to/mcp-rag/mcp_server/gateway.py \
   --env PYTHONPATH=/path/to/mcp-rag
 
-# Проверить
+# Verify
 claude mcp list
 ```
 
-Конфиг сохраняется в `~/.claude.json`:
+Config is saved to `~/.claude.json`:
 
 ```json
 {
@@ -345,15 +345,15 @@ claude mcp list
 
 ### Gemini CLI
 
-Официальная CLI: https://cloud.google.com/gemini/docs/codeassist/cli-getting-started
+Official CLI: https://cloud.google.com/gemini/docs/codeassist/cli-getting-started
 
 ```bash
-# Установка
+# Installation
 pip install google-generativeai
-# или через gcloud
+# or via gcloud
 gcloud components install gemini
 
-# MCP конфиг в ~/.gemini/settings.json
+# MCP config in ~/.gemini/settings.json
 ```
 
 ```json
@@ -367,17 +367,17 @@ gcloud components install gemini
 }
 ```
 
-Для stdio-режима укажите `command` вместо `url` — формат аналогичен Claude Code.
+For stdio mode, specify `command` instead of `url` — format is similar to Claude Code.
 
 ### OpenAI Codex CLI
 
-Официальная CLI: https://github.com/openai/codex
+Official CLI: https://github.com/openai/codex
 
 ```bash
-# Установка
+# Installation
 npm install -g @openai/codex
 
-# MCP конфиг в ~/.codex/config.json или указать через флаг
+# MCP config in ~/.codex/config.json or specify via flag
 codex --mcp-server "http://127.0.0.1:8002/mcp" "search for authentication logic"
 ```
 
@@ -394,23 +394,23 @@ codex --mcp-server "http://127.0.0.1:8002/mcp" "search for authentication logic"
 
 ---
 
-## Варианты топологий развёртывания
+## Deployment Topologies
 
-### Топология 1 — Всё локально
+### Topology 1 — All Local
 
-Все три компонента на одной машине разработчика. Самый простой вариант.
+All three components on a single developer machine. The simplest option.
 
 ```
-[Машина разработчика]
+[Developer Machine]
   IDE/Agent → mcp_server:8002 → rag_server:8000 → embed_server:8001
 ```
 
-Конфиг (скопировать из примера):
+Config (copy from example):
 ```bash
 cp examples/env/local.env.example .env
 ```
 
-Ключевые настройки `.env`:
+Key `.env` settings:
 ```env
 EMBED_HOST=127.0.0.1
 EMBED_SERVER_URL=http://127.0.0.1:8001
@@ -419,7 +419,7 @@ RAG_BACKEND=http
 MCP_TRANSPORT=http
 ```
 
-Запуск:
+Startup:
 ```bash
 bash embed_server/start_embed.sh
 bash rag_server/start_rag.sh
@@ -428,25 +428,25 @@ bash mcp_server/start_mcp.sh
 
 ---
 
-### Топология 2 — Всё на удалённом сервере, MCP подключается удалённо
+### Topology 2 — Everything remote, MCP connects remotely
 
-Весь стек на GPU-сервере. IDE подключается к MCP gateway по сети.
+Entire stack on a GPU server. IDE connects to the MCP gateway over the network.
 
 ```
 [GPU Server: gpu-host]
   embed_server:8001
   rag_server:8000
-  mcp_server:8002   ← IDE подключается сюда по HTTP
+  mcp_server:8002   ← IDE connects here via HTTP
 
-[Машина разработчика]
+[Developer Machine]
   IDE/Agent → http://gpu-host:8002/mcp
 ```
 
-На сервере — `.env`:
+On server — `.env`:
 ```env
 EMBED_HOST=0.0.0.0
 EMBED_PORT=8001
-EMBED_BACKEND=onnx-cuda      # или onnx-rocm для AMD
+EMBED_BACKEND=onnx-cuda      # or onnx-rocm for AMD
 
 RAG_HOST=0.0.0.0
 RAG_PORT=8000
@@ -458,7 +458,7 @@ RAG_BACKEND=http
 RAG_SERVER=http://127.0.0.1:8000
 ```
 
-В IDE (локально):
+In IDE (locally):
 ```json
 {
   "mcpServers": {
@@ -472,27 +472,27 @@ RAG_SERVER=http://127.0.0.1:8000
 
 ---
 
-### Топология 3 — MCP локально, RAG и embed на удалённом сервере
+### Topology 3 — MCP local, RAG and embed remote
 
-Лёгкий gateway на машине разработчика, тяжёлые компоненты на сервере.
+Lightweight gateway on the developer machine, heavy components on the server.
 
 ```
 [GPU Server: gpu-host]
   embed_server:8001
   rag_server:8000
 
-[Машина разработчика]
+[Developer Machine]
   mcp_server:8002  → http://gpu-host:8000
-  IDE/Agent → mcp_server:8002 (или stdio)
+  IDE/Agent → mcp_server:8002 (or stdio)
 ```
 
-На сервере запускаем только embed и rag:
+On server, run only embed and rag:
 ```bash
 bash embed_server/start_embed.sh
 bash rag_server/start_rag.sh
 ```
 
-Локально — `mcp_server/.env`:
+Locally — `mcp_server/.env`:
 ```env
 RAG_BACKEND=http
 RAG_SERVER=http://gpu-host:8000
@@ -501,12 +501,12 @@ MCP_HOST=127.0.0.1
 MCP_PORT=8002
 ```
 
-Локально — запуск:
+Locally — startup:
 ```bash
 bash mcp_server/start_mcp.sh
 ```
 
-Или без отдельного сервера (stdio):
+Or without a separate server (stdio):
 ```json
 {
   "mcpServers": {
@@ -526,36 +526,36 @@ bash mcp_server/start_mcp.sh
 
 ---
 
-### Топология 4 — MCP + RAG локально, несколько embed_server на удалённых серверах
+### Topology 4 — MCP + RAG local, multiple remote embed_servers
 
-Для больших проектов или параллельного инжеста: несколько GPU-воркеров вычисляют эмбеддинги одновременно. rag_server делит батчи между ними поровну, вызовы параллельны.
+For large projects or parallel ingest: multiple GPU workers compute embeddings simultaneously. rag_server divides batches equally among them, executing in parallel.
 
 ```
 [GPU Server 1: gpu1-host]
-  embed_server:8001  ← вычисляет половину батча
+  embed_server:8001  ← processes half of the batch
 
 [GPU Server 2: gpu2-host]
-  embed_server:8001  ← вычисляет другую половину батча
+  embed_server:8001  ← processes the other half of the batch
 
 [Local/Server: rag-host]
-  rag_server:8000    ← делит батч между воркерами
+  rag_server:8000    ← divides the batch among workers
 
-[Машина разработчика]
+[Developer Machine]
   mcp_server → rag_server
 ```
 
-В `rag_server/.env` — перечислить все воркеры через запятую:
+In `rag_server/.env` — list all workers separated by commas:
 ```env
-# При наличии EMBED_SERVER_URLS переменная EMBED_SERVER_URL игнорируется
+# If EMBED_SERVER_URLS is present, EMBED_SERVER_URL is ignored
 EMBED_SERVER_URLS=http://gpu1-host:8001,http://gpu2-host:8001
 
-# Если воркеры на разных портах:
+# If workers are on different ports:
 # EMBED_SERVER_URLS=http://gpu1-host:8001,http://gpu2-host:8001,http://gpu3-host:8002
 ```
 
-Как это работает: rag_server делит список чанков поровну между воркерами, отправляет запросы параллельно через `ThreadPoolExecutor`, собирает результаты в исходном порядке. Линейное масштабирование скорости инжеста с количеством воркеров.
+How it works: rag_server divides the list of chunks equally among workers, sends requests in parallel via `ThreadPoolExecutor`, and collects results in the original order. Linear scaling of ingest speed with the number of workers.
 
-Каждый embed_server при этом — независимый процесс со своим `.env` и своим выбором GPU-бэкенда. Можно смешивать NVIDIA и AMD воркеры.
+Each embed_server is an independent process with its own `.env` and choice of GPU backend. You can mix NVIDIA and AMD workers.
 
 ---
 

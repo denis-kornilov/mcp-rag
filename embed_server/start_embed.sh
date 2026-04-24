@@ -1,6 +1,6 @@
 #!/bin/bash
-# embed_server — запуск (remote HTTP mode)
-# Перед стартом проверяет и при необходимости корректирует .env.
+# embed_server — start (remote HTTP mode)
+# Checks and corrects .env before starting if necessary.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,13 +15,13 @@ err()  { echo -e "${R}  ✗ $*${W}"; exit 1; }
 
 echo ""
 echo -e "${B}╔══════════════════════════════════════════╗${W}"
-echo -e "${B}║         embed_server — запуск           ║${W}"
+echo -e "${B}║         embed_server — start            ║${W}"
 echo -e "${B}╚══════════════════════════════════════════╝${W}"
 echo ""
 
-# ── 1. Проверка .env ──────────────────────────────────────────────────────────
+# ── 1. Check .env ──────────────────────────────────────────────────────────
 if [ ! -f "$ENV_FILE" ]; then
-    err ".env не найден: $ENV_FILE — запустите install.sh"
+    err ".env not found: $ENV_FILE — run install.sh"
 fi
 
 _env() { grep "^$1=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | xargs; }
@@ -38,7 +38,7 @@ EXEC_MODE="$(_env ONNX_EXECUTION_MODE)"
 CUDA_DEVICE_ID="$(_env CUDA_DEVICE_ID)"
 ROCM_DEVICE_ID="$(_env ROCM_DEVICE_ID)"
 
-echo -e "${B}[1/3] Проверка конфигурации .env...${W}"
+echo -e "${B}[1/3] Checking .env configuration...${W}"
 
 # EMBED_HOST
 EMBED_HOST="${EMBED_HOST:-0.0.0.0}"
@@ -60,25 +60,25 @@ for b in $VALID_BACKENDS; do
     [ "$EMBED_BACKEND" = "$b" ] && BACKEND_OK=true && break
 done
 if [ "$BACKEND_OK" = false ]; then
-    warn "Неизвестный EMBED_BACKEND=$EMBED_BACKEND — допустимые: $VALID_BACKENDS"
-    warn "Будет использован onnx-cpu"
+    warn "Unknown EMBED_BACKEND=$EMBED_BACKEND — valid options: $VALID_BACKENDS"
+    warn "Will use onnx-cpu"
     sed -i "s|^EMBED_BACKEND=.*|EMBED_BACKEND=onnx-cpu|" "$ENV_FILE"
     EMBED_BACKEND="onnx-cpu"
 fi
 ok "EMBED_BACKEND=$EMBED_BACKEND"
 
-# Потоки
+# Threads
 ONNX_THREADS="${ONNX_THREADS:-4}"
 SEARCH_THREADS="${SEARCH_THREADS:-1}"
 INTER_THREADS="${INTER_THREADS:-1}"
 EXEC_MODE="${EXEC_MODE:-sequential}"
-ok "Потоки: ingest=$ONNX_THREADS search=$SEARCH_THREADS inter=$INTER_THREADS mode=$EXEC_MODE"
+ok "Threads: ingest=$ONNX_THREADS search=$SEARCH_THREADS inter=$INTER_THREADS mode=$EXEC_MODE"
 
 # GPU device IDs
 CUDA_DEVICE_ID="${CUDA_DEVICE_ID:-0}"
 ROCM_DEVICE_ID="${ROCM_DEVICE_ID:-0}"
 
-# HF_HOME — разрешить относительный путь
+# HF_HOME — allow relative path
 HF_HOME_RAW="${HF_HOME_RAW:-./data/hf_home}"
 if [[ "$HF_HOME_RAW" != /* ]]; then
     HF_HOME_ABS="$SCRIPT_DIR/${HF_HOME_RAW#./}"
@@ -87,39 +87,39 @@ else
 fi
 if [ ! -d "$HF_HOME_ABS" ]; then
     mkdir -p "$HF_HOME_ABS"
-    ok "Создан HF_HOME: $HF_HOME_ABS"
+    ok "Created HF_HOME: $HF_HOME_ABS"
 else
     ok "HF_HOME: $HF_HOME_ABS"
 fi
 
-# ── 2. Проверка ONNX-модели и onnxruntime ─────────────────────────────────────
+# ── 2. Check ONNX model and onnxruntime ─────────────────────────────────────
 echo ""
-echo -e "${B}[2/3] Проверка модели и onnxruntime...${W}"
+echo -e "${B}[2/3] Checking model and onnxruntime...${W}"
 
 CONDA_DIR="${CONDA_DIR:-$HOME/miniconda3}"
 PYTHON="${PYTHON:-$("$CONDA_DIR/bin/conda" run -n "$ENV_NAME" which python 2>/dev/null || which python3)}"
 
 if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then
-    err "Python не найден в env '$ENV_NAME'. Запустите: bash $SCRIPT_DIR/install.sh"
+    err "Python not found in env '$ENV_NAME'. Run: bash $SCRIPT_DIR/install.sh"
 fi
 ok "Python: $PYTHON"
 
-# Проверка onnxruntime
+# Check onnxruntime
 ORT_OK="$("$PYTHON" -c "import onnxruntime; print(onnxruntime.__version__)" 2>/dev/null || echo '')"
 if [ -z "$ORT_OK" ]; then
-    err "onnxruntime не установлен в env '$ENV_NAME'. Запустите: bash $SCRIPT_DIR/install.sh"
+    err "onnxruntime not installed in env '$ENV_NAME'. Run: bash $SCRIPT_DIR/install.sh"
 fi
 ok "onnxruntime: $ORT_OK"
 
-# Проверка ORT провайдера для выбранного бэкенда
+# Check ORT provider for selected backend
 if [ "$EMBED_BACKEND" = "onnx-cuda" ]; then
     CUDA_OK="$("$PYTHON" -c "import onnxruntime as o; print('ok' if 'CUDAExecutionProvider' in o.get_available_providers() else '')" 2>/dev/null || echo '')"
     if [ -z "$CUDA_OK" ]; then
-        warn "CUDAExecutionProvider недоступен — EMBED_BACKEND=$EMBED_BACKEND не будет работать."
-        warn "Переключить на CPU? Измените EMBED_BACKEND=onnx-cpu в $ENV_FILE"
+        warn "CUDAExecutionProvider unavailable — EMBED_BACKEND=$EMBED_BACKEND will not work."
+        warn "Switch to CPU? Change EMBED_BACKEND=onnx-cpu in $ENV_FILE"
     else
-        ok "CUDAExecutionProvider доступен — device_id=$CUDA_DEVICE_ID"
-        # Показать GPU info если nvidia-smi доступен
+        ok "CUDAExecutionProvider available — device_id=$CUDA_DEVICE_ID"
+        # Show GPU info if nvidia-smi is available
         if command -v nvidia-smi &>/dev/null; then
             GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader --id="$CUDA_DEVICE_ID" 2>/dev/null | head -1)"
             GPU_MEM="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader --id="$CUDA_DEVICE_ID" 2>/dev/null | head -1)"
@@ -129,11 +129,11 @@ if [ "$EMBED_BACKEND" = "onnx-cuda" ]; then
 elif [ "$EMBED_BACKEND" = "onnx-rocm" ]; then
     ROCM_OK="$("$PYTHON" -c "import onnxruntime as o; print('ok' if 'ROCMExecutionProvider' in o.get_available_providers() else '')" 2>/dev/null || echo '')"
     if [ -z "$ROCM_OK" ]; then
-        warn "ROCMExecutionProvider недоступен — EMBED_BACKEND=$EMBED_BACKEND не будет работать."
-        warn "Переключить на CPU? Измените EMBED_BACKEND=onnx-cpu в $ENV_FILE"
+        warn "ROCMExecutionProvider unavailable — EMBED_BACKEND=$EMBED_BACKEND will not work."
+        warn "Switch to CPU? Change EMBED_BACKEND=onnx-cpu in $ENV_FILE"
     else
-        ok "ROCMExecutionProvider доступен — device_id=$ROCM_DEVICE_ID"
-        # Показать GPU info если rocm-smi доступен
+        ok "ROCMExecutionProvider available — device_id=$ROCM_DEVICE_ID"
+        # Show GPU info if rocm-smi is available
         if command -v rocm-smi &>/dev/null; then
             ROCM_INFO="$(rocm-smi --showproductname 2>/dev/null | grep -i "gpu\[${ROCM_DEVICE_ID}\]" | head -1)"
             [ -n "$ROCM_INFO" ] && info "$ROCM_INFO"
@@ -150,24 +150,24 @@ else: print('cpu')
     case "$AUTO_PROV" in
         cuda) ok "onnx-auto → CUDAExecutionProvider (device_id=$CUDA_DEVICE_ID)" ;;
         rocm) ok "onnx-auto → ROCMExecutionProvider (device_id=$ROCM_DEVICE_ID)" ;;
-        *)    ok "onnx-auto → CPUExecutionProvider (GPU не обнаружен)" ;;
+        *)    ok "onnx-auto → CPUExecutionProvider (GPU not found)" ;;
     esac
 fi
 
-# Проверка ONNX-файла модели
+# Check ONNX model file
 ONNX_DIR="$HF_HOME_ABS/onnx_exports/bge-m3"
 if [ -f "$ONNX_DIR/model_quantized.onnx" ]; then
-    ok "Модель (INT8): $ONNX_DIR/model_quantized.onnx"
+    ok "Model (INT8): $ONNX_DIR/model_quantized.onnx"
 elif [ -f "$ONNX_DIR/model.onnx" ]; then
-    ok "Модель (FP32): $ONNX_DIR/model.onnx"
+    ok "Model (FP32): $ONNX_DIR/model.onnx"
 else
-    warn "ONNX-модель не найдена в $ONNX_DIR"
-    warn "При первом запросе модель будет экспортирована автоматически (~3–8 мин)."
+    warn "ONNX model not found in $ONNX_DIR"
+    warn "On first request, model will be exported automatically (~3–8 min)."
 fi
 
-# ── 3. Запуск ─────────────────────────────────────────────────────────────────
+# ── 3. Start ─────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${B}[3/3] Запуск embed_server...${W}"
+echo -e "${B}[3/3] Starting embed_server...${W}"
 
 export HF_HOME="$HF_HOME_ABS"
 export PYTHONPATH="$ROOT_DIR"

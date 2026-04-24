@@ -134,7 +134,7 @@ _JOBS: Dict[str, Dict[str, Any]] = {}
 _STOP_EVENTS: Dict[str, threading.Event] = {}
 _RECENT_JOBS: "deque[str]" = deque(maxlen=200)
 _PENDING_MUTATIONS: Dict[str, Dict[str, Any]] = {}
-_ALLOWED_CONFIRM_ANSWERS = {"подтверждаю", "делай", "ок"}
+_ALLOWED_CONFIRM_ANSWERS = {"confirm", "yes", "do it", "ok"}
 DEBUG_LOG_PATH = Path(__file__).resolve().parents[1] / "debug.log"
 
 
@@ -283,15 +283,15 @@ class _IngestProgressTracker:
     def _make_summary(self, percent, rate, eta_s, elapsed) -> str:
         phase = self._phase
         if phase == "preparing":
-            label = f"подготовка файлов {self._files_done}/{self._files_total}"
+            label = f"preparing files {self._files_done}/{self._files_total}"
         elif phase == "embedding":
-            label = f"векторизация чанков {self._chunks_written}/{self._chunks_total}"
+            label = f"vectorizing chunks {self._chunks_written}/{self._chunks_total}"
         elif phase == "deleting":
-            label = f"удаление устаревших {self._files_done}/{self._files_total}"
+            label = f"deleting stale {self._files_done}/{self._files_total}"
         elif phase == "scan_done":
-            label = f"сканирование завершено: {self._files_total} файлов"
+            label = f"scan complete: {self._files_total} files"
         elif phase == "reset":
-            label = "сброс коллекции"
+            label = "resetting collection"
         else:
             label = phase
 
@@ -299,11 +299,11 @@ class _IngestProgressTracker:
         if percent is not None:
             parts.append(f"({percent:.1f}%)")
         if rate is not None:
-            unit = "chunks/s" if phase == "embedding" else "файлов/s"
+            unit = "chunks/s" if phase == "embedding" else "files/s"
             parts.append(f"@ {rate:.1f} {unit}")
         if eta_s is not None:
-            parts.append(f"осталось ~{_fmt_duration(eta_s)}")
-        parts.append(f"[прошло {_fmt_duration(elapsed)}]")
+            parts.append(f"~{_fmt_duration(eta_s)} remaining")
+        parts.append(f"[elapsed {_fmt_duration(elapsed)}]")
         return " | ".join(parts)
 
 
@@ -412,7 +412,7 @@ def _create_mutation_request(action: str, args: Dict[str, Any], summary: str) ->
         "status": "confirmation_required",
         "action": action,
         "args": args,
-        "question": f"Подтверди мутацию RAG: {summary}",
+        "question": f"Confirm RAG mutation: {summary}",
         "allowed_answers": sorted(_ALLOWED_CONFIRM_ANSWERS),
         "created_at": time.time(),
     }
@@ -627,14 +627,14 @@ def scan_project(root: str = "", limit_files: int = 5000) -> Dict[str, Any]:
             preview = scan_files_preview(root=target_root, limit_files=limit_files)
         allowlist = preview.get("allowlist") or []
         scope = (
-            f"полное дерево от {target_root}"
+            f"full tree from {target_root}"
             if not allowlist
-            else f"только: {', '.join(allowlist)} (AUTO_INGEST_ALLOWLIST)"
+            else f"only: {', '.join(allowlist)} (AUTO_INGEST_ALLOWLIST)"
         )
         preview["scope_summary"] = (
-            f"Корень: {target_root} | "
-            f"Охват: {scope} | "
-            f"Файлов: {preview['files_found']} ({preview['total_mb']} МБ)"
+            f"Root: {target_root} | "
+            f"Scope: {scope} | "
+            f"Files: {preview['files_found']} ({preview['total_mb']} MB)"
         )
         _debug_log(f"[control] stage=mcp_scan_project {preview['scope_summary']}")
         return preview
@@ -681,7 +681,7 @@ def _launch_ingest_thread(job_id: str, target_root: Path, collection: str, force
                             message="completed")
                 _debug_log(f"[ingest] job={job_id[:8]} remote completed")
             elif remote_status == "stopped":
-                _update_job(job_id, status="stopped", message="остановлен по запросу")
+                _update_job(job_id, status="stopped", message="stopped by request")
             else:
                 err = remote.get("error") or {"message": remote.get("message", "unknown")}
                 _update_job(job_id, status="error", message=err.get("message", ""),
@@ -716,7 +716,7 @@ def _launch_ingest_thread(job_id: str, target_root: Path, collection: str, force
             _update_job(
                 job_id,
                 status="stopped",
-                message="остановлен по запросу",
+                message="stopped by request",
                 result={
                     "mode": "stopped",
                     "chunks_written": partial.get("chunks_written", 0),
@@ -753,8 +753,8 @@ def ingest_project(collection: str = "code", root: str = "", force_full: bool = 
         "collection": collection,
         "root": str(target_root),
         "force_full": force_full,
-        "message": "Инжест запущен в фоне. Вызывай get_job_status(job_id) каждые 30-60 секунд для отслеживания прогресса и ETA.",
-        "poll_hint": "Полный реиндекс большого проекта может занять 1-2 часа.",
+        "message": "Ingest started in background. Call get_job_status(job_id) every 30-60 seconds to track progress and ETA.",
+        "poll_hint": "Full reindex of a large project may take 1-2 hours.",
     }
 
 
@@ -787,7 +787,7 @@ def confirm_ingest_project(
         "collection": collection,
         "root": str(target_root),
         "force_full": force_full,
-        "message": "Инжест запущен в фоне. Вызывай get_job_status(job_id) для отслеживания прогресса.",
+        "message": "Ingest started in background. Call get_job_status(job_id) to track progress.",
     }
 
 
@@ -815,7 +815,7 @@ def _launch_ingest_paths_thread(job_id: str, target_root: Path, collection: str,
             except Exception:
                 pass
         except StopIngestion:
-            _update_job(job_id, status="stopped", message="остановлен по запросу")
+            _update_job(job_id, status="stopped", message="stopped by request")
             _debug_log(f"[ingest] job={job_id[:8]} paths stopped gracefully")
         except Exception as exc:
             _debug_log(f"[ERROR] ingest_paths job={job_id[:8]} failed exc={type(exc).__name__}:{exc}")
@@ -845,7 +845,7 @@ def ingest_paths(paths: list, collection: str = "code", root: str = "") -> Dict[
         "paths_count": len(paths),
         "collection": collection,
         "root": str(target_root),
-        "message": "Инжест запущен в фоне. Вызывай get_job_status(job_id) для отслеживания прогресса.",
+        "message": "Ingest started in background. Call get_job_status(job_id) to track progress.",
     }
 
 
@@ -878,7 +878,7 @@ def confirm_ingest_paths(
         "paths_count": len(paths),
         "collection": collection,
         "root": str(target_root),
-        "message": "Инжест запущен в фоне. Вызывай get_job_status(job_id) для отслеживания прогресса.",
+        "message": "Ingest started in background. Call get_job_status(job_id) to track progress.",
     }
 
 
@@ -900,7 +900,7 @@ def get_job_status(job_id: str) -> Dict[str, Any]:
     progress = job.get("progress") or {}
     started_at = job.get("started_at") or time.time()
 
-    lines: List[str] = [f"Задача {job_id[:8]} | действие={action} | статус={status}"]
+    lines: List[str] = [f"Job {job_id[:8]} | action={action} | status={status}"]
 
     if status == "running" and progress:
         summary = progress.get("summary")
@@ -908,14 +908,14 @@ def get_job_status(job_id: str) -> Dict[str, Any]:
         elapsed_human = progress.get("elapsed_human", "")
         percent = progress.get("percent")
         if summary:
-            lines.append(f"Прогресс: {summary}")
+            lines.append(f"Progress: {summary}")
         if percent is not None:
-            lines.append(f"Выполнено: {percent:.1f}%")
+            lines.append(f"Done: {percent:.1f}%")
         if eta_human and eta_human != "--":
-            lines.append(f"Осталось: ~{eta_human}")
+            lines.append(f"Remaining: ~{eta_human}")
         if elapsed_human:
-            lines.append(f"Прошло: {elapsed_human}")
-        lines.append("(продолжай опрашивать каждые 30-60 секунд)")
+            lines.append(f"Elapsed: {elapsed_human}")
+        lines.append("(keep polling every 30-60 seconds)")
 
     elif status == "completed":
         result = job.get("result") or {}
@@ -925,7 +925,7 @@ def get_job_status(job_id: str) -> Dict[str, Any]:
         written = result.get("written", 0)
         changes = result.get("changes") or {}
         lines.append(
-            f"Завершено за {_fmt_duration(elapsed)}: "
+            f"Completed in {_fmt_duration(elapsed)}: "
             f"mode={mode} written={written} chunks | "
             f"new={changes.get('new', 0)} changed={changes.get('changed', 0)} "
             f"deleted={changes.get('deleted', 0)}"
@@ -933,7 +933,7 @@ def get_job_status(job_id: str) -> Dict[str, Any]:
 
     elif status == "error":
         error = job.get("error") or {}
-        lines.append(f"Ошибка: {error.get('message', job.get('message', ''))}")
+        lines.append(f"Error: {error.get('message', job.get('message', ''))}")
 
     job["human_summary"] = "\n".join(lines)
     return job
@@ -969,7 +969,7 @@ def stop_job(job_id: str) -> Dict[str, Any]:
         return {
             "job_id": job_id,
             "status": current_status,
-            "message": f"Задача уже завершена со статусом '{current_status}' — остановка не нужна.",
+            "message": f"Job already finished with status '{current_status}' — no stop needed.",
         }
 
     event = _STOP_EVENTS.get(job_id)
@@ -977,7 +977,7 @@ def stop_job(job_id: str) -> Dict[str, Any]:
         return {
             "job_id": job_id,
             "status": "error",
-            "message": "Нет stop_event для этой задачи (старый формат). Перезапусти инжест.",
+            "message": "No stop_event for this job (legacy format). Re-run ingest.",
         }
 
     event.set()
@@ -994,9 +994,9 @@ def stop_job(job_id: str) -> Dict[str, Any]:
         "job_id": job_id,
         "status": "stop_requested",
         "message": (
-            "Сигнал остановки отправлен. Текущий файл завершится и инжест остановится. "
-            "Манифест уже сохранён для всех обработанных файлов — следующий запуск продолжит с того места. "
-            "Вызови get_job_status(job_id) чтобы убедиться что статус стал 'stopped'."
+            "Stop signal sent. Current file will finish and ingest will stop. "
+            "Manifest already saved for all processed files — next run will continue from that point. "
+            "Call get_job_status(job_id) to confirm status became 'stopped'."
         ),
         "chunks_written_so_far": progress.get("chunks_written", 0),
         "files_done_so_far": progress.get("files_done", 0),

@@ -1,6 +1,6 @@
-# rag_server — зависимости
-# rag_server НЕ выполняет ML-инференс сам — вычисления на embed_server (отдельный процесс).
-# Никаких torch / onnxruntime / optimum / transformers здесь не нужно.
+# rag_server — dependencies
+# rag_server DOES NOT perform ML inference itself — calculations are on embed_server (separate process).
+# No torch / onnxruntime / optimum / transformers are needed here.
 
 fastapi[standard]>=0.115.0
 uvicorn>=0.30.6
@@ -17,6 +17,6 @@ chromadb==0.5.5
 watchdog>=6.0.0
 
 # Cross-encoder reranker (optional — fallback to lexical overlap if not installed)
-# Тянет torch (~2GB). Установить только если нужен reranker:
+# Pulls torch (~2GB). Install only if reranker is needed:
 #   pip install sentence-transformers>=2.7.0
 # sentence-transformers>=2.7.0

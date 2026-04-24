@@ -1,15 +1,15 @@
-# mcp-rag — сводный pip requirements для единого окружения (dev / single-machine)
+# mcp-rag — unified pip requirements for a single environment (dev / single-machine)
 #
-# Продакшн: используйте отдельные conda env для каждой подсистемы:
+# Production: use separate conda envs for each subsystem:
 #   embed_server : conda env create -f embed_server/environment.yml
 #   rag_server   : conda env create -f rag_server/environment.yml
 #   mcp_server   : conda env create -f mcp_server/environment.yml
 #
-# GPU (onnxruntime вариант — конфликтуют, выбрать один):
+# GPU (onnxruntime variants — conflict with each other, select one):
 #   CPU:         pip install onnxruntime
 #   NVIDIA CUDA: pip install onnxruntime-gpu
 #   AMD ROCm:    pip install onnxruntime-rocm
-# Автоматический выбор: bash embed_server/install.sh
+# Automatic selection: bash embed_server/install.sh
 
 # ── rag_server ─────────────────────────────────────────────────────────────────
 fastapi[standard]>=0.115.0
@@ -27,10 +27,10 @@ numpy>=1.24.0
 transformers>=4.40.0
 optimum[onnxruntime]>=1.21.0
 overrides>=7.7.0
-# onnxruntime / onnxruntime-gpu / onnxruntime-rocm — установить вручную (см. выше)
+# onnxruntime / onnxruntime-gpu / onnxruntime-rocm — install manually (see above)
 
 # ── mcp_server ─────────────────────────────────────────────────────────────────
 mcp>=1.12.4
 
-# ── опционально: reranker (тянет torch ~2GB) ──────────────────────────────────
+# ── optional: reranker (pulls torch ~2GB) ──────────────────────────────────
 # sentence-transformers>=2.7.0
