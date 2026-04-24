@@ -1,0 +1,92 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
+.eggs/
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env.d/
+
+# ── Testing / coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.dmypy/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# ── Project data — векторные базы и данные проектов ──────────────────────────
+# Все данные проектов изолированы по ключу в mcp_rag_projects/<key>/
+mcp_rag_projects/
+# Общий ChromaDB (legacy single-project, если используется)
+data/chroma_db/
+# Устаревший путь
+.mcp_rag/
+
+# ── ML модели и кэши ──────────────────────────────────────────────────────────
+# HuggingFace модели (4+ GB)
+data/hf_home/
+embed_server/data/
+# ONNX-экспорт (генерируется из HF моделей)
+onnx_exports/
+# PyTorch / HF кэши
+.cache/
+*.pt
+*.bin
+*.safetensors
+*.onnx
+# Исключение: если хотите коммитить небольшие квантованные модели — закомментируйте строку выше
+
+# ── Логи ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+# HuggingFace xet transport logs
+**/xet/logs/
+
+# ── Переменные окружения (могут содержать секреты) ───────────────────────────
+# ВНИМАНИЕ: .env файлы содержат пути и настройки — НЕ коммитьте в публичный репо
+# Раскомментируйте если не хотите пушить .env:
+.env
+# embed_server/.env
+rag_server/.env
+mcp_server/.env
+
+# ── Временные файлы ───────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+*.pid
+
+# ── Project key files ─────────────────────────────────────────────────────────
+# UUID ключ проекта (генерируется gateway из CWD — у каждого своя копия)
+.mcp-rag
+
+# ── Системные ─────────────────────────────────────────────────────────────────
+.Trash-*/
+*.sock

@@ -1,0 +1,49 @@
+name: mcp-rag-all
+# Единое conda-окружение для всего стека (embed + rag + mcp gateway).
+# Используется для разработки или однопроцессорных машин.
+#
+# Для продакшн предпочтительны отдельные env:
+#   embed_server: environment.yml → mcp-embed
+#   rag_server:   environment.yml → mcp-rag
+#   mcp_server:   environment.yml → mcp-gateway
+#
+# Создать: conda env create -f environment.yml
+# GPU (onnxruntime): см. embed_server/install.sh
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12
+  - pip
+
+  - pip:
+      # ── web / API ────────────────────────────────────────────────────────────
+      - fastapi[standard]>=0.115.0
+      - uvicorn>=0.30.6
+      - pydantic>=2.9.2
+      - pydantic-settings>=2.5.2
+      - python-dotenv>=1.2.1
+      - requests>=2.31.0
+
+      # ── rag_server ───────────────────────────────────────────────────────────
+      - pathspec>=0.12.1
+      - chromadb==0.5.5
+      - watchdog>=6.0.0
+
+      # ── embed_server ─────────────────────────────────────────────────────────
+      - numpy>=1.24.0
+      - transformers>=4.40.0
+      - optimum[onnxruntime]>=1.21.0
+      - overrides>=7.7.0
+      # onnxruntime вариант (конфликтуют — выбрать один):
+      - onnxruntime>=1.19.0          # CPU (по умолчанию)
+      # - onnxruntime-gpu            # NVIDIA CUDA
+      # - onnxruntime-rocm           # AMD ROCm
+
+      # ── mcp_server ───────────────────────────────────────────────────────────
+      - mcp>=1.12.4
+
+      # ── опционально: reranker ────────────────────────────────────────────────
+      # - sentence-transformers>=2.7.0

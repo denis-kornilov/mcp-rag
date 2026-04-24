@@ -1,0 +1,21 @@
+# embed_server — зависимости
+# PyTorch НЕ используется. Только ONNX Runtime.
+#
+# GPU варианты (install.sh выбирает нужный, они конфликтуют между собой):
+#   CPU:         pip install onnxruntime
+#   NVIDIA CUDA: pip install onnxruntime-gpu
+#   AMD ROCm:    pip install onnxruntime-rocm
+
+fastapi[standard]>=0.115.0
+uvicorn>=0.30.6
+pydantic>=2.9.2
+python-dotenv>=1.2.1
+requests>=2.31.0
+numpy>=1.24.0
+
+# Токенизатор и экспорт в ONNX (без PyTorch-инференса)
+transformers>=4.40.0
+optimum[onnxruntime]>=1.21.0
+overrides>=7.7.0
+
+# onnxruntime устанавливается через install.sh в зависимости от GPU

@@ -1,0 +1,52 @@
+{
+  "_comment": "MCP configuration examples for Claude Code / Claude Desktop",
+
+  "stdio_mode": {
+    "_description": "Gateway runs as child process of IDE (stdio transport). Simplest setup — no separate server needed.",
+    "mcpServers": {
+      "mcp-rag": {
+        "type": "stdio",
+        "command": "python",
+        "args": ["/absolute/path/to/mcp-rag/mcp_server/gateway.py"],
+        "env": {
+          "PYTHONPATH": "/absolute/path/to/mcp-rag",
+          "RAG_BACKEND": "local"
+        }
+      }
+    }
+  },
+
+  "http_mode": {
+    "_description": "Gateway runs as standalone HTTP server (start_mcp.sh). IDE connects via HTTP. Supports multiple concurrent IDEs.",
+    "mcpServers": {
+      "mcp-rag": {
+        "type": "http",
+        "url": "http://127.0.0.1:8002/mcp"
+      }
+    }
+  },
+
+  "http_mode_remote": {
+    "_description": "All servers running on a remote GPU machine.",
+    "mcpServers": {
+      "mcp-rag": {
+        "type": "http",
+        "url": "http://gpu-server:8002/mcp"
+      }
+    }
+  },
+
+  "claude_desktop_example": {
+    "_description": "~/.claude.json format for Claude Desktop (stdio mode)",
+    "mcpServers": {
+      "mcp-rag": {
+        "command": "python",
+        "args": ["/absolute/path/to/mcp-rag/mcp_server/gateway.py"],
+        "env": {
+          "PYTHONPATH": "/absolute/path/to/mcp-rag",
+          "RAG_BACKEND": "local"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# mcp_server (gateway) — зависимости
+# В local-режиме gateway импортирует rag_server напрямую (in-process),
+# поэтому нужны все зависимости rag_server.
+# embed_server работает отдельным процессом — его пакеты (onnxruntime, transformers,
+# optimum) здесь НЕ нужны.
+# PYTHONPATH должен включать mcp-rag/ (корень проекта).
+
+mcp>=1.12.4
+fastapi[standard]>=0.115.0
+uvicorn>=0.30.6
+pydantic>=2.9.2
+pydantic-settings>=2.5.2
+python-dotenv>=1.2.1
+requests>=2.31.0
+pathspec>=0.12.1
+
+# Vector store (local mode — rag_server in-process)
+chromadb==0.5.5
+
+# File system watcher (disabled by default: FS_WATCHER_ENABLED=false)
+watchdog>=6.0.0
+
+# Cross-encoder reranker (optional — fallback to lexical overlap if not installed)
+# pip install sentence-transformers>=2.7.0
+# sentence-transformers>=2.7.0

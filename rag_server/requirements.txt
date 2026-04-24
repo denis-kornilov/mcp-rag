@@ -1,0 +1,22 @@
+# rag_server — зависимости
+# rag_server НЕ выполняет ML-инференс сам — вычисления на embed_server (отдельный процесс).
+# Никаких torch / onnxruntime / optimum / transformers здесь не нужно.
+
+fastapi[standard]>=0.115.0
+uvicorn>=0.30.6
+pydantic>=2.9.2
+pydantic-settings>=2.5.2
+python-dotenv>=1.2.1
+requests>=2.31.0
+pathspec>=0.12.1
+
+# Vector store
+chromadb==0.5.5
+
+# File system watcher (disabled by default: FS_WATCHER_ENABLED=false)
+watchdog>=6.0.0
+
+# Cross-encoder reranker (optional — fallback to lexical overlap if not installed)
+# Тянет torch (~2GB). Установить только если нужен reranker:
+#   pip install sentence-transformers>=2.7.0
+# sentence-transformers>=2.7.0

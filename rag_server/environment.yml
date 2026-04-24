@@ -1,0 +1,21 @@
+name: mcp-rag
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12
+  - pip
+
+  - pip:
+      - fastapi[standard]>=0.115.0
+      - uvicorn>=0.30.6
+      - pydantic>=2.9.2
+      - pydantic-settings>=2.5.2
+      - python-dotenv>=1.2.1
+      - requests>=2.31.0
+      - pathspec>=0.12.1
+      - chromadb==0.5.5
+      - watchdog>=6.0.0
+      # Опционально: cross-encoder reranker (тянет torch ~2GB)
+      # - sentence-transformers>=2.7.0
