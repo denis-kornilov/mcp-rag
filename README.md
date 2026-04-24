@@ -2,7 +2,47 @@
 
 [![License: Polyform Noncommercial 1.0.0](https://img.shields.io/badge/license-Polyform%20NC%201.0-blue)](LICENSE)
 
-Semantic search engine for codebases and documents, exposed via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Connects to any MCP-compatible AI agent (Claude Code, Claude Desktop, Cursor, Gemini, Codex, etc.) and provides contextual code search without blocking the agent's workflow.
+A complete, production-ready RAG stack exposed via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Connect it to any MCP-compatible coding agent — in the IDE or in the terminal — using the standard MCP configuration format your tool already supports. No custom development required.
+
+---
+
+## Why RAG for your coding agent?
+
+Modern coding agents are powerful — but without retrieval, they are fundamentally limited by context window size. As your project grows, the agent can no longer hold all relevant code in memory at once. It forgets earlier decisions, makes contradictory edits, misses existing patterns, and repeats mistakes. In large or complex codebases, this is not an edge case — it is the default.
+
+**[Retrieval-Augmented Generation](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) (RAG)** solves this by giving the agent a queryable, persistent index of your entire codebase. Instead of loading full files into context, the agent retrieves only the relevant chunks — precisely at the moment they are needed.
+
+This changes how an agent operates at a fundamental level:
+
+- **Up to 90% fewer tokens** on code analysis tasks. The agent reads what is relevant, not everything in the repository.
+- **No context window exhaustion.** Works on projects of any size. Search quality does not degrade as the codebase grows.
+- **Focused, coherent responses.** The agent works from a structured knowledge base rather than a memory dump, stays on topic, and makes fewer contradictory edits across a session.
+- **Real agent identity.** A RAG-backed agent is a genuine domain expert: it knows your architecture, your conventions, your internal APIs. Without retrieval, it is a general-purpose assistant pretending to know your project — and the pretense breaks down exactly when you need it most.
+
+RAG is not a convenience feature. It is what separates an agent that is *about* your codebase from one that merely has access to it.
+
+---
+
+## mcp-rag — drop-in RAG for any coding agent
+
+**mcp-rag** is a self-contained RAG system that requires no additional development. Install, configure, and wire it up to your agent with a single JSON block:
+
+```json
+{
+  "mcpServers": {
+    "mcp-rag": {
+      "type": "http",
+      "url": "http://127.0.0.1:8002/mcp"
+    }
+  }
+}
+```
+
+That is the complete integration. Your agent gains semantic search over your entire codebase — hybrid BM25 + vector search, optional cross-encoder reranking, background ingest that never blocks queries, and full multi-project isolation.
+
+Supported agents: **Claude Code, Claude Desktop, Cursor, Gemini CLI, OpenAI Codex CLI**, and any other tool that speaks MCP — whether running in an IDE or a terminal.
+
+---
 
 ## Features
 
