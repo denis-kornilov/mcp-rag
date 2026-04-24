@@ -66,7 +66,7 @@ def ensure_running(embed_server_url: str = "http://127.0.0.1:8001") -> bool:
     env = os.environ.copy()
     env.setdefault("PYTHONPATH", pkg_root)
 
-    # Load embed_server/.env so HF_HOME and other vars are available in subprocess
+    # Load embed_server/.env so runtime vars are available in subprocess
     _dotenv_path = embed_dir / ".env"
     if _dotenv_path.exists():
         with open(_dotenv_path) as _f:
@@ -75,12 +75,9 @@ def ensure_running(embed_server_url: str = "http://127.0.0.1:8001") -> bool:
                 if not _line or _line.startswith("#") or "=" not in _line:
                     continue
                 _k, _, _v = _line.partition("=")
-                _k = _k.strip()
-                _v = _v.strip()
-                # Resolve relative paths against embed_dir
-                if _k == "HF_HOME" and _v and not os.path.isabs(_v):
-                    _v = str((embed_dir / _v.lstrip("./")).resolve())
-                env.setdefault(_k, _v)
+                env.setdefault(_k.strip(), _v.strip())
+    # HF_HOME is always collocated — hardcode so HuggingFace libs use the right cache
+    env["HF_HOME"] = str(embed_dir / "embed_data" / "hf_home")
 
     cmd = [
         sys.executable, "-m", "uvicorn",

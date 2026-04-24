@@ -48,9 +48,10 @@ except Exception:
     pass
 
 _EMBED_BACKEND  = os.environ.get("EMBED_BACKEND", "onnx-cpu").strip().lower()
-_HF_HOME        = os.environ.get("HF_HOME", "")
-_ONNX_DIR       = str(Path(_HF_HOME) / "onnx_exports" / "bge-m3") if _HF_HOME else None
-_HF_CACHE       = _HF_HOME or None
+
+_HF_HOME  = str(_SELF_DIR / "embed_data" / "hf_home")
+_HF_CACHE = _HF_HOME
+_ONNX_DIR = str(_SELF_DIR / "embed_data" / "onnx_exports" / "bge-m3")
 _INGEST_THREADS = int(os.environ.get("ONNX_NUM_THREADS", "4"))
 _SEARCH_THREADS = int(os.environ.get("SEARCH_THREADS", "1"))
 _INTER_THREADS  = int(os.environ.get("ONNX_INTER_THREADS", "1"))
@@ -258,27 +259,26 @@ def _ort_providers() -> list:
 
 
 def _get_onnx_path() -> str:
-    onnx_dir = Path(_ONNX_DIR) if _ONNX_DIR else None
-    quantized = onnx_dir / "model_quantized.onnx" if onnx_dir else None
-    fp32 = onnx_dir / "model.onnx" if onnx_dir else None
+    onnx_dir = Path(_ONNX_DIR)
+    quantized = onnx_dir / "model_quantized.onnx"
+    fp32 = onnx_dir / "model.onnx"
 
-    if quantized and quantized.exists():
+    if quantized.exists():
         logger.info("[model] using quantized ONNX INT8: %s", quantized)
         return str(quantized)
-    if fp32 and fp32.exists():
+    if fp32.exists():
         logger.info("[model] using FP32 ONNX: %s", fp32)
         return str(fp32)
 
     logger.info("[model] exporting ONNX from HuggingFace: BAAI/bge-m3")
     _require_optimum()
     from optimum.onnxruntime import ORTModelForFeatureExtraction  # type: ignore
-    export_dir = onnx_dir or Path(_HF_CACHE or ".") / "onnx_exports" / "bge-m3"
-    export_dir.mkdir(parents=True, exist_ok=True)
+    onnx_dir.mkdir(parents=True, exist_ok=True)
     tmp = ORTModelForFeatureExtraction.from_pretrained(
         "BAAI/bge-m3", export=True, cache_dir=_HF_CACHE
     )
-    tmp.save_pretrained(str(export_dir))
-    return str(export_dir / "model.onnx")
+    tmp.save_pretrained(str(onnx_dir))
+    return str(onnx_dir / "model.onnx")
 
 
 def _load_tokenizer_no_torch(model_id: str):

@@ -24,13 +24,12 @@ if [ ! -f "$ENV_FILE" ]; then
     err ".env not found: $ENV_FILE — copy from .env.example or run install.sh"
 fi
 
-_env() { grep "^$1=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | xargs; }
+_env() { { grep "^$1=" "$ENV_FILE" 2>/dev/null || true; } | cut -d= -f2- | xargs; }
 
 RAG_HOST="$(_env RAG_HOST)"
 RAG_PORT="$(_env RAG_PORT)"
 ENV_NAME="$(_env ENV_NAME)"
 EMBED_URL="$(_env EMBED_SERVER_URL)"
-DATA_ROOT="$(_env SERVER_DATA_ROOT)"
 FS_WATCHER="$(_env FS_WATCHER_ENABLED)"
 
 echo -e "${B}[1/3] Checking .env configuration...${W}"
@@ -75,16 +74,9 @@ if [ "$FS_WATCHER" = "true" ]; then
 fi
 
 # SERVER_DATA_ROOT — create if missing
-DATA_ROOT="${DATA_ROOT:-./mcp_rag_projects}"
-if [[ "$DATA_ROOT" != /* ]]; then
-    DATA_ROOT="$ROOT_DIR/${DATA_ROOT#./}"
-fi
-if [ ! -d "$DATA_ROOT" ]; then
-    mkdir -p "$DATA_ROOT"
-    ok "Created SERVER_DATA_ROOT: $DATA_ROOT"
-else
-    ok "SERVER_DATA_ROOT: $DATA_ROOT"
-fi
+DATA_ROOT="$SCRIPT_DIR/rag_data"
+mkdir -p "$DATA_ROOT"
+ok "SERVER_DATA_ROOT: $DATA_ROOT"
 
 # ── 2. Check embed_server availability ─────────────────────────────────────
 echo ""

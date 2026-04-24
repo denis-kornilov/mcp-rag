@@ -53,19 +53,21 @@ class ProjectManager:
     # Public API
     # ------------------------------------------------------------------ #
 
-    def register(self, name: str = "", hint: str = "", key: str = "") -> Dict[str, Any]:
+    def register(self, hint: str = "", key: str = "") -> Dict[str, Any]:
         """Create a new project. Returns its full config including the key.
 
         If *key* is provided it is used as-is (and as the subdirectory name).
         Otherwise a UUID hex is generated.
+        Name is derived from the last component of hint (project folder name).
         """
         with _LOCK:
             key = key.strip() or uuid.uuid4().hex
             project_dir = self._root / key
             project_dir.mkdir(parents=True, exist_ok=True)
+            derived_name = Path(hint.strip()).name if hint.strip() else key[:8]
             entry: Dict[str, Any] = {
                 "key": key,
-                "name": name.strip() or key[:8],
+                "name": derived_name,
                 "hint": hint.strip(),
                 "chroma_path": str(project_dir / "chroma_db"),
                 "project_root": hint.strip() or str(project_dir),
@@ -102,6 +104,6 @@ def get_manager() -> ProjectManager:
         if _instance is not None:
             return _instance
         from .settings import settings  # noqa: PLC0415
-        root = str(getattr(settings, "server_data_root", "./mcp_rag_projects"))
+        root = str(getattr(settings, "server_data_root", str(Path(__file__).resolve().parent / "rag_data")))
         _instance = ProjectManager(root)
     return _instance

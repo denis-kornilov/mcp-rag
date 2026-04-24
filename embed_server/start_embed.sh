@@ -24,12 +24,11 @@ if [ ! -f "$ENV_FILE" ]; then
     err ".env not found: $ENV_FILE — run install.sh"
 fi
 
-_env() { grep "^$1=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | xargs; }
+_env() { { grep "^$1=" "$ENV_FILE" 2>/dev/null || true; } | cut -d= -f2- | xargs; }
 
 EMBED_HOST="$(_env EMBED_HOST)"
 EMBED_PORT="$(_env EMBED_PORT)"
 ENV_NAME="$(_env ENV_NAME)"
-HF_HOME_RAW="$(_env HF_HOME)"
 EMBED_BACKEND="$(_env EMBED_BACKEND)"
 ONNX_THREADS="$(_env ONNX_NUM_THREADS)"
 SEARCH_THREADS="$(_env SEARCH_THREADS)"
@@ -78,19 +77,8 @@ ok "Threads: ingest=$ONNX_THREADS search=$SEARCH_THREADS inter=$INTER_THREADS mo
 CUDA_DEVICE_ID="${CUDA_DEVICE_ID:-0}"
 ROCM_DEVICE_ID="${ROCM_DEVICE_ID:-0}"
 
-# HF_HOME — allow relative path
-HF_HOME_RAW="${HF_HOME_RAW:-./data/hf_home}"
-if [[ "$HF_HOME_RAW" != /* ]]; then
-    HF_HOME_ABS="$SCRIPT_DIR/${HF_HOME_RAW#./}"
-else
-    HF_HOME_ABS="$HF_HOME_RAW"
-fi
-if [ ! -d "$HF_HOME_ABS" ]; then
-    mkdir -p "$HF_HOME_ABS"
-    ok "Created HF_HOME: $HF_HOME_ABS"
-else
-    ok "HF_HOME: $HF_HOME_ABS"
-fi
+HF_HOME_ABS="$SCRIPT_DIR/embed_data/hf_home"
+ok "HF_HOME: $HF_HOME_ABS"
 
 # ── 2. Check ONNX model and onnxruntime ─────────────────────────────────────
 echo ""
@@ -155,7 +143,7 @@ else: print('cpu')
 fi
 
 # Check ONNX model file
-ONNX_DIR="$HF_HOME_ABS/onnx_exports/bge-m3"
+ONNX_DIR="$SCRIPT_DIR/embed_data/onnx_exports/bge-m3"
 if [ -f "$ONNX_DIR/model_quantized.onnx" ]; then
     ok "Model (INT8): $ONNX_DIR/model_quantized.onnx"
 elif [ -f "$ONNX_DIR/model.onnx" ]; then

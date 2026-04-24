@@ -1004,7 +1004,7 @@ def stop_job(job_id: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def register_project(name: str = "", project_path: str = "") -> Dict[str, Any]:
+def register_project(project_path: str = "") -> Dict[str, Any]:
     """Register a new project on the RAG server and get a project key.
 
     Call this once per project. Save the returned key in your agent's settings.json
@@ -1012,7 +1012,7 @@ def register_project(name: str = "", project_path: str = "") -> Dict[str, Any]:
     """
     def runner(job_id: str) -> Dict[str, Any]:
         from rag_server.project_manager import get_manager  # noqa: PLC0415
-        entry = get_manager().register(name=name, hint=project_path)
+        entry = get_manager().register(hint=project_path)
         _debug_log(f"[control] stage=register_project key={entry['key'][:8]} name={entry['name']}")
         return {
             "project_key": entry["key"],
@@ -1024,7 +1024,7 @@ def register_project(name: str = "", project_path: str = "") -> Dict[str, Any]:
                 "HTTP:   add X-Project-Key: <key> to headers in settings.json"
             ),
         }
-    return _run_action("register_project", {"name": name, "project_path": project_path}, runner)
+    return _run_action("register_project", {"project_path": project_path}, runner)
 
 
 @mcp.tool()
@@ -1177,8 +1177,7 @@ def _init_rag_components(project_key: str, project_root: Path) -> None:
                     if not _registered:
                         resp = _rag_http(
                             "POST", f"{_RAG_URL}/project/register",
-                            json={"key": project_key, "name": project_key,
-                                  "project_path": str(project_root)},
+                            json={"key": project_key, "project_path": str(project_root)},
                             timeout=5,
                         )
                         resp.raise_for_status()
@@ -1264,10 +1263,9 @@ def _register_project_rest_endpoint() -> None:
             body = await request.json()
         except Exception:
             body = {}
-        name = str(body.get("name", "")).strip()
         hint = str(body.get("project_path", "")).strip()
         from rag_server.project_manager import get_manager  # noqa: PLC0415
-        entry = get_manager().register(name=name, hint=hint)
+        entry = get_manager().register(hint=hint)
         _debug_log(f"[control] stage=rest_register_project key={entry['key'][:8]}")
         return JSONResponse({
             "project_key": entry["key"],
@@ -1292,11 +1290,12 @@ def main() -> None:
     # Make project key available to all _rag_http calls immediately.
     _set_rag_project_key(project_key)
 
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
-    # When spawned as a subprocess by an IDE (stdin is not a TTY), force stdio
-    # regardless of .env so start_mcp.sh (http) and IDE subprocess (stdio) both work.
-    if transport in ("http", "sse") and not sys.stdin.isatty():
-        transport = "stdio"
+    _explicit_transport = os.getenv("MCP_TRANSPORT")
+    if _explicit_transport:
+        transport = _explicit_transport
+    else:
+        # Auto-detect: IDE subprocess (stdin not a TTY) → stdio; standalone shell → http
+        transport = "stdio" if not sys.stdin.isatty() else "http"
 
     _debug_log(
         f"[control] stage=mcp_gateway_boot transport={transport} "

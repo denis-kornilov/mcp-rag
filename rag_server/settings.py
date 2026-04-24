@@ -116,7 +116,7 @@ class Settings(BaseSettings):
     rag_server: str = Field(default="http://127.0.0.1:8000", validation_alias=AliasChoices("RAG_SERVER", "rag_server"))
     # Multi-project support
     project_key: str = Field(default="", validation_alias=AliasChoices("PROJECT_KEY", "project_key"))
-    server_data_root: str = Field(default="./mcp_rag_projects", validation_alias=AliasChoices("SERVER_DATA_ROOT", "server_data_root"))
+    server_data_root: str = Field(default="")
     # Hybrid search (BM25 + vector RRF)
     hybrid_search_enabled: bool = Field(default=False, validation_alias=AliasChoices("HYBRID_SEARCH_ENABLED", "hybrid_search_enabled"))
     # Cross-encoder reranker model
@@ -131,10 +131,6 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         self.chroma_path = _normalize_path(self.chroma_path) or str(CWD_DIR / ".mcp_rag" / "db")
         self.project_root = _normalize_project_root(self.project_root)
-        # Resolve server_data_root relative to the mcp-rag package dir, not cwd.
-        # This ensures the gateway (started from a project dir) always finds
-        # the shared RAG data, regardless of which project is open.
-        if not Path(self.server_data_root).is_absolute():
-            self.server_data_root = str((PKG_DIR / self.server_data_root).resolve())
+        self.server_data_root = str(SELF_DIR / "rag_data")
 
 settings = Settings()

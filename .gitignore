@@ -38,27 +38,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# ── Project data — vector databases and project data ──────────────────────────
-# All project data is isolated by key in mcp_rag_projects/<key>/
-mcp_rag_projects/
-# Shared ChromaDB (legacy single-project, if used)
-data/chroma_db/
-# Legacy path
-.mcp_rag/
-
-# ── ML models and caches ────────────────────────────────────────────────────────
-# HuggingFace models (4+ GB)
-data/hf_home/
-embed_server/data/
-# ONNX exports (generated from HF models)
-onnx_exports/
-# PyTorch / HF caches
-.cache/
-*.pt
-*.bin
-*.safetensors
-*.onnx
-# Exception: if you want to commit small quantized models — comment out the line above
+# ── Server data ───────────────────────────────────────────────────────────────
+rag_server/rag_data/
+embed_server/embed_data/
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log

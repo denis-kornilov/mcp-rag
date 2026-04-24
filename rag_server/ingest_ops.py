@@ -42,22 +42,22 @@ _PACKAGE_ROOT: Path = Path(__file__).resolve().parents[1]
 def _data_roots() -> frozenset[Path]:
     """Return the set of resolved data directories that must never be ingested.
 
-    Covers:
-    - The entire mcp_rag_data parent directory (chroma_db + all model caches live there)
-    - Each individual configured path as a fallback if they live elsewhere
-    Called lazily so settings are fully loaded before we read them.
+    Paths are computed the same way the servers compute them at startup,
+    so protection works regardless of .gitignore.
     """
     candidates: list[str | None] = [
+        # rag_server project data root (rag_server/rag_data/)
+        settings.server_data_root,
+        # per-project chroma_db and its parent
         settings.chroma_path,
-        # model caches — read from env directly (no longer in rag_server settings)
+        str(Path(settings.chroma_path).parent) if settings.chroma_path else None,
+        # embed_server data root (embed_server/embed_data/) — sibling of rag_server/
+        str(_PACKAGE_ROOT / "embed_server" / "embed_data"),
+        # model caches — honour explicit env overrides if set
         os.environ.get("HF_HOME"),
         os.environ.get("SENTENCE_TRANSFORMERS_HOME"),
         os.environ.get("TORCH_HOME"),
     ]
-    # Also add the parent of chroma_path — that's typically the top-level data
-    # dir (e.g. mcp_rag_data) which contains ALL model caches and the vector DB.
-    if settings.chroma_path:
-        candidates.append(str(Path(settings.chroma_path).parent))
 
     project_root = Path(settings.project_root).resolve()
     roots: set[Path] = set()
@@ -95,7 +95,7 @@ SKIP_DIRS: frozenset[str] = frozenset({
     # IDE
     ".idea", ".vscode",
     # RAG data — never index your own vector store or model cache
-    "chroma_db", "mcp_rag_data",
+    "chroma_db",
 })
 
 ProgressCb = Callable[[str, Dict[str, Any]], None] | None

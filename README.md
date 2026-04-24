@@ -485,7 +485,7 @@ Each project directory gets its own namespace:
 
 1. Gateway reads CWD, generates/reads UUID4 from `.mcp-rag` file
 2. Registers key with rag_server on startup
-3. All ChromaDB data in `mcp_rag_projects/<key>/chroma_db/`
+3. All ChromaDB data in `rag_server/rag_data/<key>/chroma_db/`
 4. Every request carries `X-Project-Key`; rag_server returns 401/403 without it
 
 Multiple agents on different projects run simultaneously with full data isolation.
@@ -674,11 +674,12 @@ Priority order: CUDA → ROCm → CPU. Convenient when deploying across machines
 
 - **Non-blocking ingest** — ingest runs in background threads, returns `job_id` immediately; search is always available
 - **Dual ORT sessions** — search and ingest use separate ONNX Runtime sessions in true OS-level parallelism
-- **Multi-project isolation** — each project gets a UUID4 key (stored in `.mcp-rag`); data isolated in `mcp_rag_projects/<key>/`
+- **Multi-project isolation** — each project gets a UUID4 key (stored in `.mcp-rag`); data isolated in `rag_server/rag_data/<key>/`
 - **Hybrid search** — BM25 + vector embeddings fused via Reciprocal Rank Fusion (RRF)
 - **Cross-encoder reranker** — optional `sentence-transformers` CrossEncoder for higher precision
 - **CPU-first** — works out of the box on any machine; NVIDIA CUDA and AMD ROCm supported via `embed_server/install.sh`
 - **MCP stdio + HTTP** — gateway works as a child process (stdio) or standalone HTTP server
+- **Self-contained data layout** — all server data stays inside its own folder: `rag_server/rag_data/` and `embed_server/embed_data/`; pre-configured `.gitignore` excludes both directories (prevents circular ingestion when indexing mcp-rag itself)
 
 ---
 

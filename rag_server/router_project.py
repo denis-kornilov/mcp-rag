@@ -7,18 +7,16 @@ router = APIRouter(prefix="/project", tags=["project"])
 @router.post("/register")
 def register_project(body: Dict[str, Any] = Body(default={})) -> Dict[str, Any]:
     key = str(body.get("key", "")).strip()
-    name = str(body.get("name", "")).strip()
     hint = str(body.get("project_path", "")).strip()
-    
+
     manager = get_manager()
-    
-    # If key is provided, check existing or create with this key
+
     if key:
         existing = manager.get(key)
         if existing:
             return existing
-            
-    entry = manager.register(key=key, name=name, hint=hint)
+
+    entry = manager.register(key=key, hint=hint)
     return entry
 
 @router.get("/list")

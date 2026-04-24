@@ -5,15 +5,17 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-TRANSPORT="$(grep '^MCP_TRANSPORT=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo 'http')"
-HOST="$(grep '^MCP_HOST=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo '127.0.0.1')"
-PORT="$(grep '^MCP_PORT=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo '8002')"
-RAG="$(grep '^RAG_SERVER=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo 'http://127.0.0.1:8000')"
+export MCP_TRANSPORT="$(grep '^MCP_TRANSPORT=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo 'http')"
+export MCP_HOST="$(grep '^MCP_HOST=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo '127.0.0.1')"
+export MCP_PORT="$(grep '^MCP_PORT=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo '8002')"
+export RAG_SERVER="$(grep '^RAG_SERVER=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo 'http://127.0.0.1:8000')"
+export RAG_BACKEND="$(grep '^RAG_BACKEND=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo 'http')"
+export RAG_CONNECT_POLL_S="$(grep '^RAG_CONNECT_POLL_S=' "$SCRIPT_DIR/.env" 2>/dev/null | cut -d= -f2 || echo '10')"
 
-PYTHON="${PYTHON:-$(conda run -n mcp-gateway which python 2>/dev/null || which python3)}"
+PYTHON="${PYTHON:-$(conda run -n core2 which python 2>/dev/null || which python3)}"
 
-echo "[mcp] MCP server  : $TRANSPORT://$HOST:$PORT"
-echo "[mcp] RAG client  : $RAG"
+echo "[mcp] MCP server  : $MCP_TRANSPORT://$MCP_HOST:$MCP_PORT"
+echo "[mcp] RAG client  : $RAG_SERVER"
 
 export PYTHONPATH="$ROOT_DIR"
 cd "$SCRIPT_DIR"
